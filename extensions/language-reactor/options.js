@@ -58,6 +58,11 @@ document.querySelector('#settings').addEventListener('submit', async event => {
   } catch (error) { status.textContent = `保存失败：${error.message}`; }
 });
 
+document.getElementById('resetDefaults')?.addEventListener('click', async () => {
+  await chrome.storage.local.set({absUrl: ABS_URL, bridgeUrl: BRIDGE_URL, customDomain: false});
+  location.reload();
+});
+
 document.getElementById('openAbs').addEventListener('click', () => {
   try { chrome.tabs.create({url: document.getElementById('absUrl').value || ABS_URL}); }
   catch (error) { status.textContent = error.message; }
