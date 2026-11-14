@@ -20,7 +20,7 @@
 |---|---|
 | 推 `main`，只改了 `extensions/book-matching/**` | 只发「书籍匹配」 |
 | 推 `main`，同时改了两个扩展目录 | 发这两个 |
-| 推标签 `cws-v*`（如 `git tag cws-v1.6.1 && git push --tags`） | 三个全发 |
+| 推标签 `cws-v*` | 把 `cws-items.json` 里登记的全部发一遍 |
 | 仓库页 Actions →「发布到 Chrome 应用商店」→ Run workflow | 手动选一个 / all，可勾 dry-run |
 
 > 商店不接受重复版本号：`manifest.json` 的 `version` 和 `scripts/package_extensions.py` 里
@@ -69,7 +69,11 @@ python3 scripts/cws.py secrets     # 打印 4 行，复制粘贴
 | `CWS_REFRESH_TOKEN` | `secrets` 命令打印的 refresh token |
 | `CWS_PUBLISHER_ID` | 发布者 ID（同 `scripts/cws-items.json` 里的 `publisherId`） |
 
-### 4. 填三个条目的 itemId
+### 4. 填条目的 itemId
+
+> 现在商店上架的是合并版 `extensions/toolkit`（Audiobookshelf 工具箱）。原来三个独立扩展是拆分版，
+> 保留在仓库里但不再发布；`scripts/cws-items.json` 的 `items` 里只保留 `toolkit` 一条。
+> workflow 会自动跳过没登记的目录，所以改旧扩展不会触发发布、也不会报红。
 
 `scripts/cws-items.json` 里 `items.<slug>.itemId`：
 
@@ -116,10 +120,11 @@ git add -A && git commit -m "book-matching: 修 xxx" && git push
 | `HTTP 403` | OAuth 客户端那个 Google 账号不是这个 publisher 的所有者，或 API 没启用 |
 | `提交审核` 有 warning | 用 `--block-on-warnings` 可以让它直接失败好排查 |
 | 条目不存在 | API **不能创建**新条目；新扩展必须先在开发者后台人工上传一次，之后才归 CI 管 |
+| 条目还在草稿态 | 只上传、不提交审核（避免商店以「商品详情不全」拒绝）；补齐商品详情、首次提交审核后就自动走 |
 
 ## 相关文件
 
 - `scripts/cws.py` — 授权 / probe / status / upload
-- `scripts/cws-items.json` — publisherId + 三个 itemId
+- `scripts/cws-items.json` — publisherId + 已登记条目（当前只有 `toolkit`）
 - `scripts/package_extensions.py` — 打包（`VERSIONS` 是版本号来源）
 - `.github/workflows/cws-publish.yml` — 流水线
