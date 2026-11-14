@@ -1,5 +1,5 @@
 #!/bin/bash
-# 双击运行：下载 Audiobookshelf Chrome 扩展并准备安装
+# 双击运行：下载 Audiobookshelf 工具箱（三合一扩展）并准备安装
 set -uo pipefail
 REPO="wzs2004/mossdock-homelab"
 DEST="$HOME/Downloads/AudiobookshelfPlugins"
@@ -12,12 +12,14 @@ if ! curl -fL --retry 2 -o "$TMP/repo.zip" "https://codeload.github.com/$REPO/zi
 fi
 unzip -q "$TMP/repo.zip" -d "$TMP/src"
 
-ZIPS=$(find "$TMP/src" -path '*/dist/*.zip' -maxdepth 5 | sort)
-[ -z "$ZIPS" ] && { echo "包内未找到 dist/*.zip"; exit 1; }
+# 只装三合一的 toolbox，旧的三个独立扩展不再分发
+ZIPS=$(find "$TMP/src" -path '*/dist/abs-toolkit-*.zip' -maxdepth 5 | sort | tail -1)
+[ -z "$ZIPS" ] && { echo "包内未找到 dist/abs-toolkit-*.zip"; exit 1; }
 while IFS= read -r z; do
   [ -z "$z" ] && continue
-  name="$(basename "$z")"; slug="${name%.zip}"; slug="${slug%-*}"
-  echo "==> 安装 $slug"
+  name="$(basename "$z")"
+  slug="toolkit"
+  echo "==> 准备 $name"
   rm -rf "$DEST/$slug"; mkdir -p "$DEST/$slug"
   unzip -qo "$z" -d "$DEST/$slug"
   xattr -dr com.apple.quarantine "$DEST/$slug" 2>/dev/null || true
@@ -30,9 +32,9 @@ osascript <<'APPLESCRIPT' 2>/dev/null || true
 tell application "System Events"
   display dialog "最后两步（Chrome 137 起禁止商店外静默安装）：
 1) 在 chrome://extensions 右上角打开「开发者模式」
-2) 把 Downloads/AudiobookshelfPlugins 里的扩展文件夹拖进页面
+2) 点「加载已解压的扩展程序」，选 Downloads/AudiobookshelfPlugins/toolkit
 
-装好后打开每个扩展的「选项」，填服务器地址和密钥。" buttons {"知道了"} default button 1 with title "Audiobookshelf 插件安装"
+装好后点扩展图标，填服务器地址和三个密钥（转写 / 元数据 / 桥接）。" buttons {"知道了"} default button 1 with title "Audiobookshelf 工具箱安装"
 end tell
 APPLESCRIPT
 echo; echo "完成：$DEST"

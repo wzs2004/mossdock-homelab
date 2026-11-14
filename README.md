@@ -38,9 +38,10 @@ DNS、证书、隧道、扩展的后续步骤见 [docs/DOMAIN_CHANGE.md](docs/DO
 
 | 扩展 | 作用 | 安装包 |
 |---|---|---|
-| **转写管理** | 书库首页看转写队列，进书后开始转写并查看进度与报错 | `dist/abs-transcription-manager-1.1.0.zip` |
-| **书籍匹配** | 在书籍页选择元数据来源，查看全部候选并一键应用 | `dist/abs-book-matching-1.6.0.zip` |
-| **Language Reactor** | 把单条音轨连同字幕送进 Language Reactor | `dist/abs-language-reactor-1.5.0.zip` |
+| **Audiobookshelf 工具箱** | 三合一：转写管理 + 书籍元数据匹配 + Language Reactor 桥接 | `dist/abs-toolkit-1.0.0.zip` |
+
+已上架商店（审核中）：<https://chromewebstore.google.com/detail/aeghohpnnacbdopgjbjegcdjkminlkdp>。
+旧的三个独立扩展（`dist/abs-transcription-manager-*` 等）保留在仓库里但不再分发。
 
 转写管理需要服务端 `stacks/transcription-manager`（对外经 `/__ext/asr`），
 密钥用该 stack `.env` 里的 `EXTENSION_TOKEN`。

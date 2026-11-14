@@ -2,13 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Audiobookshelf 插件 · 安装</title>
+<title>Audiobookshelf 工具箱 · 安装</title>
 <style>
 :root{color-scheme:dark}
 body{margin:0;font:16px/1.6 system-ui,-apple-system,"PingFang SC",sans-serif;background:#0b1622;color:#e8f3fa}
 .wrap{max-width:760px;margin:0 auto;padding:64px 24px}
 h1{font-size:34px;margin:0 0 8px}
-.sub{color:#9db6c6;margin:0 0 40px}
+.sub{color:#9db6c6;margin:0 0 32px}
 .cards{display:grid;gap:14px;margin:32px 0}
 .card{background:#122336;border:1px solid #1e3a52;border-radius:14px;padding:18px 20px}
 .card h3{margin:0 0 4px;font-size:18px}
@@ -18,29 +18,51 @@ h1{font-size:34px;margin:0 0 8px}
 ol{padding-left:22px} li{margin:8px 0}
 code{background:#0d1f2e;border:1px solid #1e3a52;border-radius:6px;padding:2px 6px;font-size:14px}
 .note{background:#1a2b1f;border:1px solid #2c4a33;color:#bde6c5;padding:12px 16px;border-radius:10px;font-size:14px;margin:24px 0}
+.warn{background:#2b2017;border:1px solid #4a3527;color:#e6cfb5;padding:12px 16px;border-radius:10px;font-size:14px;margin:24px 0}
+.tag{display:inline-block;font-size:12px;background:#123049;border:1px solid #2f5570;color:#9fd0e6;border-radius:999px;padding:2px 10px;margin-left:8px;vertical-align:middle}
+footer{margin-top:56px;font-size:13px;color:#7b93a5}
+a{color:#7fd0f0}
 </style>
 </head>
 <body><div class="wrap">
-<h1>Audiobookshelf 插件</h1>
-<p class="sub">转写管理 · 书籍元数据匹配 · Language Reactor，一个仓库装齐。</p>
+<h1>Audiobookshelf 工具箱 <span class="tag">三合一</span></h1>
+<p class="sub">转写管理 · 书籍元数据匹配 · Language Reactor 桥接，一个扩展全包。</p>
 
-<a class="btn" id="install" href="https://wzs2004.github.io/mossdock-homelab/install-macos.command">下载安装脚本（macOS）</a>
-<a class="btn ghost" href="https://github.com/wzs2004/mossdock-homelab/releases/latest">下载 zip</a>
+<a class="btn" href="https://chromewebstore.google.com/detail/aeghohpnnacbdopgjbjegcdjkminlkdp">从 Chrome 应用商店安装</a>
+<a class="btn ghost" href="https://github.com/wzs2004/mossdock-homelab/releases/latest">下载 zip（本地安装）</a>
 <a class="btn ghost" href="https://github.com/wzs2004/mossdock-homelab">查看源码</a>
 
 <div class="cards">
-  <div class="card"><h3>转写管理</h3><p>在书库首页看转写队列，进书后开始转写并查看进度与报错。</p></div>
-    <div class="card"><h3>书籍匹配</h3><p>在书籍页选择元数据来源，查看全部候选并一键应用。</p></div>
-    <div class="card"><h3>Language Reactor</h3><p>把单条音轨连同字幕送进 Language Reactor。</p></div>
+  <div class="card"><h3>① 转写管理</h3><p>书库首页看转写队列（排队 / 进行中 / 完成 / 失败），进书一键开始或重试，实时看进度和报错，完成后直接搜 SRT。</p></div>
+  <div class="card"><h3>② 书籍元数据匹配</h3><p>在书籍页列出全部候选来源，对比标题/作者/封面/简介，挑一个一键套用，也可以只改其中几项。</p></div>
+  <div class="card"><h3>③ Language Reactor 桥接</h3><p>把单条音轨连同已有 SRT 字幕送进 Language Reactor；隧道卡住会给超时提示和「重试」。</p></div>
 </div>
 
-<h2>安装步骤</h2>
+<h2>安装方式一：Chrome 应用商店（推荐）</h2>
 <ol>
-  <li>下载并双击 <code>install-macos.command</code>（首次右键 → 打开）</li>
-  <li>Chrome 打开 <code>chrome://extensions</code>，右上角开启 <b>开发者模式</b></li>
-  <li>把 <code>~/Downloads/AudiobookshelfPlugins/</code> 里的扩展文件夹拖进页面</li>
-  <li>打开每个扩展的「选项」，填入服务器地址和密钥</li>
+  <li>点上面的「从 Chrome 应用商店安装」（审核通过后才可访问）</li>
+  <li>点「添加至 Chrome」</li>
+  <li>扩展选项里填三个密钥（见下）</li>
 </ol>
 
-<div class="note">Chrome 137 起禁止从商店外静默安装扩展，所以最后一步需要手动拖入文件夹；脚本已经把下载、解压、打开页面都做完了。</div>
+<h2>安装方式二：本地加载（控制台审核期间也能用）</h2>
+<ol>
+  <li>双击 <code>install-macos.command</code>（首次右键 → 打开），它会把 zip 解压到 <code>~/Downloads/AudiobookshelfPlugins/toolkit</code></li>
+  <li>Chrome 打开 <code>chrome://extensions</code>，右上角开启 <b>开发者模式</b></li>
+  <li>点「加载已解压的扩展程序」，选那个 <code>toolkit</code> 文件夹</li>
+</ol>
+
+<div class="note">
+安装后点扩展图标打开设置，填三项密钥（都只存在本机浏览器）：<br>
+• 转写服务密钥 <code>X-ASR-Extension-Token</code>（<code>stacks/transcription-manager/.env</code>）<br>
+• 元数据服务密钥 <code>X-Meta-Token</code>（<code>stacks/meta-bridge/.env</code>）<br>
+• 桥接服务密钥 <code>X-LR-Bridge-Key</code>（<code>stacks/lr-bridge/.env</code>）<br>
+服务器地址只需填一个域名，三个服务路径自动推导（<code>/__ext/asr</code>、<code>/__ext/meta</code>、<code>/__ext/lr</code>）。
+</div>
+
+<div class="warn">
+Chrome 137 起禁止商店外静默安装扩展，所以本地加载必须手动拖文件夹；脚本已经把下载、解压、打开扩展页都做完了。换域名后重新下载一次 zip 即可。
+</div>
+
+<footer>© 2026 wzs2004 · <a href="https://github.com/wzs2004/mossdock-homelab">源码</a> · <a href="./privacy.html">隐私权政策</a> · <a href="./terms.html">服务条款</a></footer>
 </div></body></html>
