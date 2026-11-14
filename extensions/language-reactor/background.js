@@ -30,8 +30,11 @@ function queueRegistration() {
 async function migrateConfig() {
   const existing = await readConfig();
   const changes = {};
-  if (existing.absUrl !== ABS_URL) changes.absUrl = ABS_URL;
-  if (existing.bridgeUrl !== BRIDGE_URL) changes.bridgeUrl = BRIDGE_URL;
+  // 仓库内置的默认地址优先；只有用户在选项里手动改过（customDomain=true）才保留
+  if (!existing.customDomain) {
+    if (existing.absUrl !== ABS_URL) changes.absUrl = ABS_URL;
+    if (existing.bridgeUrl !== BRIDGE_URL) changes.bridgeUrl = BRIDGE_URL;
+  }
   const legacyKey = typeof BRIDGE_CONFIG !== 'undefined' ? BRIDGE_CONFIG.key : null;
   if (!existing.bridgeKey && legacyKey) changes.bridgeKey = legacyKey;
   if (Object.keys(changes).length) await chrome.storage.local.set(changes);

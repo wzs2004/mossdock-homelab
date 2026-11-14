@@ -52,8 +52,11 @@ async function migrateConfig() {
   const existing = await readConfig();
   const changes = {};
   // Existing Chrome profiles may still contain old local-IP addresses.
-  if (existing.absUrl !== ABS_URL) changes.absUrl = ABS_URL;
-  if (existing.managerUrl !== MANAGER_URL) changes.managerUrl = MANAGER_URL;
+  // 仓库内置的默认地址优先；只有用户在选项里手动改过（customDomain=true）才保留
+  if (!existing.customDomain) {
+    if (existing.absUrl !== ABS_URL) changes.absUrl = ABS_URL;
+    if (existing.managerUrl !== MANAGER_URL) changes.managerUrl = MANAGER_URL;
+  }
   if (!existing.managerKey && self.ASR_TOKEN) changes.managerKey = self.ASR_TOKEN;
   if (Object.keys(changes).length) await chrome.storage.local.set(changes);
   return {...existing, ...changes};

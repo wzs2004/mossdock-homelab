@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Audiobookshelf · 转写管理",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "转写任务管理、清除文稿重新识别、SRT 搜索和手选章节",
   "permissions": [
     "storage",

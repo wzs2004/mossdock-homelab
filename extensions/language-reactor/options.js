@@ -21,15 +21,15 @@ chrome.storage.local.get(fields).then(config => {
 document.querySelector('#settings').addEventListener('submit', async event => {
   event.preventDefault();
   try {
-    const absUrl = ABS_URL;
-    const bridgeUrl = BRIDGE_URL;
+    const absUrl = normalizedURL(document.getElementById('absUrl').value);
+    const bridgeUrl = normalizedURL(document.getElementById('bridgeUrl').value, true);
     const bridgeKey = document.getElementById('bridgeKey').value.trim();
     if (!bridgeKey) throw new Error('请输入密钥');
     const origins = [...new Set([permissionPattern(absUrl), permissionPattern(bridgeUrl)])];
     const missing = [];
     for (const origin of origins) if (!await chrome.permissions.contains({origins: [origin]})) missing.push(origin);
     if (missing.length && !await chrome.permissions.request({origins: missing})) throw new Error('浏览器未授权访问这些地址');
-    await chrome.storage.local.set({absUrl, bridgeUrl, bridgeKey});
+    await chrome.storage.local.set({absUrl, bridgeUrl, bridgeKey, customDomain: true});
     status.textContent = '配置已保存，请刷新 Audiobookshelf 页面。';
     try {
       const response = await fetch(`${bridgeUrl}/api/catalog`, {headers: {'X-LR-Bridge-Key': bridgeKey}});

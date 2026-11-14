@@ -11,18 +11,20 @@ function permissionPattern(origin) {
   const url = new URL(origin);
   return `${url.protocol}//${url.hostname}/*`;
 }
-chrome.storage.local.get(fields).then(config => {
+chrome.storage.local.get([...fields, 'customDomain']).then(config => {
   for (const key of fields) {
     const input = document.getElementById(key);
-    input.value = key === 'absUrl' ? ABS_URL : key === 'managerUrl' ? MANAGER_URL : (config[key] || '');
-    if (key !== 'managerKey') input.readOnly = true;
+    const fallback = key === 'absUrl' ? ABS_URL : key === 'managerUrl' ? MANAGER_URL : '';
+    input.value = config[key] || fallback;
   }
+  const note = document.getElementById('defaults');
+  if (note) note.textContent = `内置默认：${ABS_URL}（仓库换域名后，重新加载扩展即可自动跟随；手动改过则保留你的设置）`;
 });
 document.querySelector('#settings').addEventListener('submit', async event => {
   event.preventDefault();
   try {
-    const absUrl = ABS_URL;
-    const managerUrl = MANAGER_URL;
+    const absUrl = normalizedURL(document.getElementById('absUrl').value);
+    const managerUrl = normalizedURL(document.getElementById('managerUrl').value, true);
     const managerKey = document.getElementById('managerKey').value.trim();
     if (!managerKey) throw new Error('请输入密钥');
     // Request permissions directly from a user-initiated submit gesture.
@@ -30,7 +32,7 @@ document.querySelector('#settings').addEventListener('submit', async event => {
     const missing = [];
     for (const origin of origins) if (!await chrome.permissions.contains({origins: [origin]})) missing.push(origin);
     if (missing.length && !await chrome.permissions.request({origins: missing})) throw new Error('浏览器未授权访问这些地址');
-    await chrome.storage.local.set({absUrl, managerUrl, managerKey});
+    await chrome.storage.local.set({absUrl, managerUrl, managerKey, customDomain: true});
     status.textContent = '配置已保存。请刷新 Audiobookshelf 页面。';
     try {
       const response = await fetch(`${managerUrl}/api/health`, {cache: 'no-store', headers: {'X-ASR-Extension-Token': managerKey}});
