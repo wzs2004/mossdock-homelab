@@ -365,6 +365,11 @@ def cmd_upload(args):
              "X-Goog-Upload-Protocol": "raw"})
         data = parse_json(raw, "上传")
         if status >= 400:
+            detail = json.dumps(data, ensure_ascii=False).lower()
+            if "in review" in detail:
+                # 审核进行中商店不允许改动；这不是失败，等这次审核结束再发
+                print("   ⏭ 该条目正在审核中，跳过本次上传（审核结束后再发版）")
+                continue
             print("   " + google_error(status, data, "上传").replace("\n", "\n   "))
             failures.append(slug)
             continue
