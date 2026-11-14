@@ -26,6 +26,11 @@ DNS、证书、隧道、扩展的后续步骤见 [docs/DOMAIN_CHANGE.md](docs/DO
 
 ## Chrome 扩展
 
+> **商店上架的是合并版 `extensions/toolkit`（Audiobookshelf 工具箱）**：转写管理 + 书籍匹配 + Language Reactor 桥接
+> 三合一，一个图标、一个设置页（三个密钥分开填）。下面三个独立扩展保留在仓库里但不再上架，
+> 改动只发生在新代码上时请优先改 `extensions/toolkit/`。
+
+
 访问 **https://wzs2004.github.io/mossdock-homelab/** 下载安装脚本，或直接看
 [extensions/](extensions/) 目录（开发者模式加载已解压的扩展）。
 

@@ -93,6 +93,10 @@ python3 scripts/package_extensions.py     # dist/*.zip + 版本号
 扩展版本号在 `scripts/package_extensions.py` 的 `VERSIONS`，改完要递增
 （`extensions/<x>/manifest.json` 里的 `version` 要同步改，否则会打警告）。
 
+**上架的是合并版 `extensions/toolkit/`**（三个功能一个扩展，存储键 asrUrl/asrKey、metaUrl/metaKey、
+bridgeUrl/bridgeKey）。`extensions/book-matching|language-reactor|transcription-manager/` 是拆分版，
+保留但不再发布；改功能请改 toolkit。
+
 **发到 Chrome 应用商店是全自动的**：往 `main` 推改动过 `extensions/<x>/**` 的提交，
 GitHub Actions 会打包 → 上传 → 提交审核（`cws-v*` 标签 = 三个全发）。
 配置与排错见 [docs/CWS_PUBLISH.md](docs/CWS_PUBLISH.md)；手动发用
