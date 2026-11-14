@@ -37,11 +37,23 @@ document.querySelector('#settings').addEventListener('submit', async event => {
     await chrome.storage.local.set({absUrl, bridgeUrl, bridgeKey, customDomain: true});
     status.textContent = '配置已保存，请刷新 Audiobookshelf 页面。';
     try {
-      const response = await fetch(`${bridgeUrl}/api/catalog`, {headers: {'X-LR-Bridge-Key': bridgeKey}});
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      const started = performance.now();
+      let response;
+      try {
+        response = await fetch(`${bridgeUrl}/api/catalog`, {headers: {'X-LR-Bridge-Key': bridgeKey}, signal: controller.signal});
+      } finally {
+        clearTimeout(timer);
+      }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      status.textContent += '\n✓ 字幕桥接服务连接成功。';
+      const data = await response.json().catch(() => ({}));
+      const seconds = ((performance.now() - started) / 1000).toFixed(1);
+      const count = Array.isArray(data.issues) ? `，${data.issues.length} 部作品` : '';
+      status.textContent += `\n✓ 字幕桥接服务连接成功：${new URL(bridgeUrl).host}（${seconds} 秒${count}）。`;
     } catch (error) {
-      status.textContent += `\n⚠ 字幕桥接连接失败：${error.message}。检查域名和密钥。`;
+      const reason = error.name === 'AbortError' ? '20 秒内没有响应' : error.message;
+      status.textContent += `\n⚠ 字幕桥接连接失败：${reason}。检查域名、密钥和网络。`;
     }
   } catch (error) { status.textContent = `保存失败：${error.message}`; }
 });

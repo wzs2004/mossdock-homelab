@@ -1,5 +1,5 @@
 #!/bin/bash
-# 双击运行：下载三个 Audiobookshelf Chrome 扩展并准备安装
+# 双击运行：下载 Audiobookshelf Chrome 扩展并准备安装
 set -uo pipefail
 REPO="wzs2004/mossdock-homelab"
 DEST="$HOME/Downloads/AudiobookshelfPlugins"
@@ -30,7 +30,7 @@ osascript <<'APPLESCRIPT' 2>/dev/null || true
 tell application "System Events"
   display dialog "最后两步（Chrome 137 起禁止商店外静默安装）：
 1) 在 chrome://extensions 右上角打开「开发者模式」
-2) 把 Downloads/AudiobookshelfPlugins 里的三个文件夹拖进页面
+2) 把 Downloads/AudiobookshelfPlugins 里的扩展文件夹拖进页面
 
 装好后打开每个扩展的「选项」，填服务器地址和密钥。" buttons {"知道了"} default button 1 with title "Audiobookshelf 插件安装"
 end tell

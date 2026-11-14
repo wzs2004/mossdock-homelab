@@ -1,7 +1,7 @@
 # mossdock-homelab
 
 一套可被 AI 直接接管的自托管环境仓库：**Audiobookshelf + 元数据匹配 + Language Reactor + Immich + 边缘代理/隧道**，
-外加两个配套 Chrome 扩展。
+外加配套 Chrome 扩展。
 
 - 换域名：改一处 `site.json`，一条命令重新生成所有配置
 - 换电脑：照 `docs/DEPLOY_NEW_MACHINE.md` 从零拉起
@@ -27,16 +27,18 @@ DNS、证书、隧道、扩展的后续步骤见 [docs/DOMAIN_CHANGE.md](docs/DO
 ## Chrome 扩展
 
 访问 **https://wzs2004.github.io/mossdock-homelab/** 下载安装脚本，或直接看
-[extensions/](extensions/) 三个目录（开发者模式加载已解压的扩展）。
+[extensions/](extensions/) 目录（开发者模式加载已解压的扩展）。
 
 > Chrome 137 起禁止商店外静默安装，最后需要把文件夹拖进 `chrome://extensions`。
+
+Language Reactor 扩展 1.5.0 起，读取书库和传输音频都有超时与自动重试：隧道卡住时会显示失败原因和「重试」按钮，不会再无限停在“正在读取…”。
 
 ## 目录
 
 ```
 site.json                 唯一事实来源（域名/端口/路径/网络）
 stacks/                   每个服务一个 compose
-extensions/               三个 Chrome 扩展
+extensions/               Chrome 扩展
 scripts/                  render / deploy / backup / healthcheck / package
 docs/                     GitHub Pages 安装页 + 运维文档
 ```

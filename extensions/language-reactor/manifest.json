@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Audiobookshelf → Language Reactor",
-  "version": "1.4.1",
-  "description": "Open individual audiobook tracks in Language Reactor with existing SRT captions.",
+  "version": "1.5.0",
+  "description": "Open audiobook tracks in Language Reactor with existing SRT captions.",
   "permissions": [
     "storage",
     "tabs",
