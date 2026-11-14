@@ -29,6 +29,17 @@ DNS、证书、隧道、扩展的后续步骤见 [docs/DOMAIN_CHANGE.md](docs/DO
 访问 **https://wzs2004.github.io/mossdock-homelab/** 下载安装脚本，或直接看
 [extensions/](extensions/) 目录（开发者模式加载已解压的扩展）。
 
+三个扩展各自独立，可同时安装：
+
+| 扩展 | 作用 | 安装包 |
+|---|---|---|
+| **转写管理** | 书库首页看转写队列，进书后开始转写并查看进度与报错 | `dist/abs-transcription-manager-1.0.0.zip` |
+| **书籍匹配** | 在书籍页选择元数据来源，查看全部候选并一键应用 | `dist/abs-book-matching-1.6.0.zip` |
+| **Language Reactor** | 把单条音轨连同字幕送进 Language Reactor | `dist/abs-language-reactor-1.5.0.zip` |
+
+转写管理需要服务端 `stacks/transcription-manager`（对外经 `/__ext/asr`），
+密钥用该 stack `.env` 里的 `EXTENSION_TOKEN`。
+
 > Chrome 137 起禁止商店外静默安装，最后需要把文件夹拖进 `chrome://extensions`。
 
 Language Reactor 扩展 1.5.0 起，读取书库和传输音频都有超时与自动重试：隧道卡住时会显示失败原因和「重试」按钮，不会再无限停在“正在读取…”。
