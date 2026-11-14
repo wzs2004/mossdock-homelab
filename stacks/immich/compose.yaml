@@ -10,7 +10,7 @@ services:
         bind: { create_host_path: false }
       - /etc/localtime:/etc/localtime:ro
     env_file: [.env]
-    ports: ["127.0.0.1:${IMMICH_PORT:-12283}:2283"]
+    ports: ["127.0.0.1:${IMMICH_HOST_PORT:-12283}:2283"]
     depends_on: [redis, database]
     restart: unless-stopped
     networks: [immich]
@@ -19,7 +19,7 @@ services:
     image: local/immich-gate:1
     build: { context: ./gate, dockerfile: Dockerfile }
     restart: unless-stopped
-    ports: ["${IMMICH_PUBLIC_PORT:-2283}:2283"]
+    ports: ["${IMMICH_GATE_PORT:-2283}:2283"]
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       IDLE_SECONDS: "${IMMICH_IDLE_SECONDS:-1800}"
@@ -50,10 +50,11 @@ services:
       POSTGRES_INITDB_ARGS: '--data-checksums'
       DB_STORAGE_TYPE: 'SSD'
     volumes:
-      - type: bind
-        source: ${DB_DATA_LOCATION}
+      # 数据库放在命名卷（内置 SSD）。不要改回 bind mount：
+      # 旧数据在 immich_pgdata 卷里，换绑定会起一个空库。
+      - type: volume
+        source: pgdata
         target: /var/lib/postgresql/data
-        bind: { create_host_path: false }
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready --dbname=${DB_DATABASE_NAME:-immich} --username=${DB_USERNAME:-postgres}']
       interval: 5s
@@ -63,6 +64,9 @@ services:
     networks: [immich]
 volumes:
   model-cache:
+    name: immich_model-cache
+  pgdata:
+    name: immich_pgdata
 networks:
   immich:
     name: ${IMMICH_NETWORK:-mossdock-immich}

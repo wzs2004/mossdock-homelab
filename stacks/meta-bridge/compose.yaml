@@ -4,6 +4,7 @@ services:
     build: { context: ., dockerfile: Dockerfile }
     image: local/abs-meta-bridge:1
     container_name: meta-bridge
+    ports: ["127.0.0.1:${META_PORT:-13382}:13382"]
     restart: unless-stopped
     environment:
       ABS_BASE_URL: http://audiobookshelf:80

@@ -9,14 +9,13 @@ services:
     environment:
       TZ: ${TZ:-Asia/Shanghai}
     volumes:
-      - type: bind
-        source: ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/config
+      # 数据库与元数据在命名卷里（内置 SSD）；媒体库仍在机械盘。
+      - type: volume
+        source: abs-config
         target: /config
-        bind: { create_host_path: false }
-      - type: bind
-        source: ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/metadata
+      - type: volume
+        source: abs-metadata
         target: /metadata
-        bind: { create_host_path: false }
       - type: bind
         source: ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks
         target: /audiobooks
@@ -26,6 +25,11 @@ services:
         target: /audiobooks115
         bind: { create_host_path: false }
     networks: [abs]
+volumes:
+  abs-config:
+    external: true
+  abs-metadata:
+    external: true
 networks:
   abs:
     name: ${ABS_NETWORK:-mossdock-abs}

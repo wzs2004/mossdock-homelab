@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
     image: local/abs-lr-bridge:1
     container_name: abs-lr-bridge
+    ports: ["127.0.0.1:${LR_BRIDGE_PORT:-13381}:13381"]
     restart: unless-stopped
     environment:
       LR_BRIDGE_LISTEN: 0.0.0.0

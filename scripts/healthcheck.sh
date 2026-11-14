@@ -8,6 +8,7 @@ site = json.load(open('site.json')); p = site['ports']
 checks = [
     ('audiobookshelf', f"http://127.0.0.1:{p['abs']}/"),
     ('meta-bridge', f"http://127.0.0.1:{p.get('meta',13382)}/api/health"),
+    ('transcription', f"http://127.0.0.1:{p['manager']}/api/health"),
     ('lr-bridge', f"http://127.0.0.1:{p['lr_bridge']}/"),
     ('immich-gate', f"http://127.0.0.1:{p['immich_public']}/"),
 ]

@@ -22,18 +22,19 @@ done
 docker network inspect mossdock-edge >/dev/null 2>&1 || docker network create mossdock-edge >/dev/null
 
 ensure_env() { [ -f "$1/.env" ] || { cp "$1/.env.example" "$1/.env"; echo "   已生成 $1/.env（请填入密钥）"; }; }
-for d in audiobookshelf meta-bridge lr-bridge immich edge webdav; do ensure_env "stacks/$d"; done
+for d in audiobookshelf meta-bridge transcription-manager lr-bridge immich edge webdav; do ensure_env "stacks/$d"; done
 
 start() {
   local name=$1 extra=${2:-}
   echo "==> 启动 $name"
   # shellcheck disable=SC2086
-  docker compose -f "stacks/$name/compose.yaml" $extra up -d
+  docker compose -f "stacks/$name/compose.yaml" up -d $extra
 }
 ONLY=${2:-all}
 case "${ONLY}" in
   abs) start audiobookshelf ;;
   meta) start meta-bridge "--build" ;;
+  transcription) start transcription-manager "--build" ;;
   lr) start lr-bridge "--build" ;;
   immich) start immich "--build" ;;
   edge) start edge ;;
@@ -41,6 +42,7 @@ case "${ONLY}" in
   all)
     start audiobookshelf
     start meta-bridge "--build"
+    start transcription-manager "--build"
     start lr-bridge "--build"
     start immich "--build"
     start webdav
