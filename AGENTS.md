@@ -28,7 +28,7 @@
 | 服务 | 容器 | 访问 | 数据 |
 |---|---|---|---|
 | Audiobookshelf | `audiobookshelf` | `127.0.0.1:13378`，公网 `{{books}}` | `/Volumes/NAS/Apps/Audiobookshelf` |
-| 转写服务 | `transcription-manager` | 经 Caddy `/__ext/asr` | 同上 `/transcription-manager` |
+| 元数据匹配 | `meta-bridge` | 经 Caddy `/__ext/meta` | 无持久数据（备份在 `/Audiobookshelf/meta-backups`） |
 | LR 桥接 | `abs-lr-bridge` | 经 Caddy `/__ext/lr` | 只读挂载书库 |
 | Immich | `immich_*` + `immich_gate` | `:2283`，公网 `{{photos}}` | `/Volumes/NAS/Apps/Immich` |
 | 边缘 Caddy | `mossdock-accelerator` | 内部 8081/8082 | 无 |

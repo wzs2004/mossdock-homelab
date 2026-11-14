@@ -1,6 +1,6 @@
 #!/bin/bash
 # 在新机器（或本机迁移）拉起全部服务。
-# 用法: bash scripts/deploy.sh [--build] [--only abs|manager|lr|immich|edge|webdav]
+# 用法: bash scripts/deploy.sh [--build] [--only abs|meta|lr|immich|edge|webdav]
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -22,7 +22,7 @@ done
 docker network inspect mossdock-edge >/dev/null 2>&1 || docker network create mossdock-edge >/dev/null
 
 ensure_env() { [ -f "$1/.env" ] || { cp "$1/.env.example" "$1/.env"; echo "   已生成 $1/.env（请填入密钥）"; }; }
-for d in audiobookshelf transcription-manager lr-bridge immich edge webdav; do ensure_env "stacks/$d"; done
+for d in audiobookshelf meta-bridge lr-bridge immich edge webdav; do ensure_env "stacks/$d"; done
 
 start() {
   local name=$1 extra=${2:-}
@@ -33,14 +33,14 @@ start() {
 ONLY=${2:-all}
 case "${ONLY}" in
   abs) start audiobookshelf ;;
-  manager) start transcription-manager "--build" ;;
+  meta) start meta-bridge "--build" ;;
   lr) start lr-bridge "--build" ;;
   immich) start immich "--build" ;;
   edge) start edge ;;
   webdav) start webdav ;;
   all)
     start audiobookshelf
-    start transcription-manager "--build"
+    start meta-bridge "--build"
     start lr-bridge "--build"
     start immich "--build"
     start webdav

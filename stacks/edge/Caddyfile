@@ -9,8 +9,8 @@
 # Audiobookshelf + 扩展专用接口
 :8081 {
     encode zstd gzip
-    handle_path /__ext/asr/* {
-        reverse_proxy transcription-manager:13384 {
+    handle_path /__ext/meta/* {
+        reverse_proxy meta-bridge:13382 {
             header_up Host 127.0.0.1
         }
     }

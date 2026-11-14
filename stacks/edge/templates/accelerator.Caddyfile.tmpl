@@ -9,8 +9,8 @@
 # Audiobookshelf + 扩展专用接口
 :{{accel_books}} {
     encode zstd gzip
-    handle_path /__ext/asr/* {
-        reverse_proxy transcription-manager:{{manager_port}} {
+    handle_path /__ext/meta/* {
+        reverse_proxy meta-bridge:{{meta_port}} {
             header_up Host 127.0.0.1
         }
     }

@@ -42,6 +42,10 @@ async function migrateConfig() {
   const changes = {};
   // Existing Chrome profiles may still contain local-IP or Tailscale addresses.
   // 仓库内置的默认地址优先；只有用户在选项里手动改过（customDomain=true）才保留
+  // 老版本指向转写服务 /__ext/asr，统一迁移到元数据服务 /__ext/meta
+  if (typeof existing.managerUrl === 'string' && /\/__ext\/asr\/?$/.test(existing.managerUrl)) {
+    changes.managerUrl = MANAGER_URL;
+  }
   if (!existing.customDomain) {
     if (existing.absUrl !== ABS_URL) changes.absUrl = ABS_URL;
     if (existing.managerUrl !== MANAGER_URL) changes.managerUrl = MANAGER_URL;
@@ -99,7 +103,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }
     if (!config.managerKey) throw new Error('请在扩展设置中填写转写服务密钥');
-    const options = {method, cache: 'no-store', headers: {'X-ASR-Extension-Token': config.managerKey}};
+    const options = {method, cache: 'no-store', headers: {'X-Meta-Token': config.managerKey}};
     if (method === 'POST') {
       options.headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(message.value || {});

@@ -1,7 +1,7 @@
 # mossdock-homelab
 
-一套可被 AI 直接接管的自托管环境仓库：**Audiobookshelf + 转写 + Language Reactor + Immich + 边缘代理/隧道**，
-外加三个配套 Chrome 扩展。
+一套可被 AI 直接接管的自托管环境仓库：**Audiobookshelf + 元数据匹配 + Language Reactor + Immich + 边缘代理/隧道**，
+外加两个配套 Chrome 扩展。
 
 - 换域名：改一处 `site.json`，一条命令重新生成所有配置
 - 换电脑：照 `docs/DEPLOY_NEW_MACHINE.md` 从零拉起

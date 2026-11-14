@@ -25,7 +25,7 @@ cp stacks/audiobookshelf/.env.example stacks/audiobookshelf/.env
 # 每个 stack 同理；密钥清单见 docs/SECRETS.md
 ```
 
-至少需要：`ABS_API_TOKEN`、`EXTENSION_TOKEN`、`LR_BRIDGE_KEY`、`DB_PASSWORD`、
+至少需要：`ABS_API_TOKEN`、`META_TOKEN`、`LR_BRIDGE_KEY`、`DB_PASSWORD`、
 Cloudflare tunnel 凭证 JSON。
 
 ## 4. 渲染 + 启动
@@ -36,7 +36,7 @@ bash scripts/deploy.sh
 bash scripts/healthcheck.sh
 ```
 
-首次启动会构建两个本地镜像（whisper-cli + 转写、LR 桥接、Immich 网关），需要几分钟。
+首次启动会构建两个本地镜像（元数据服务、LR 桥接、Immich 网关），需要几分钟。
 
 ## 5. 对外访问
 

@@ -16,8 +16,8 @@ button:disabled{opacity:.5}a{color:#7de7d1}#status{white-space:pre-wrap;margin-t
 <p>连接到已经运行的 Audiobookshelf 和书籍工具服务。使用服务器的 HTTPS 域名，无须安装 Tailscale。</p>
 <form id="settings">
 <label for="absUrl">Audiobookshelf 网址</label><input id="absUrl" placeholder="https://books6.mossdock.autos" required>
-<label for="managerUrl">书籍工具服务网址</label><input id="managerUrl" placeholder="https://books6.mossdock.autos/__ext/asr" required>
-<label for="managerKey">书籍工具服务密钥（仅保存在此浏览器）</label><input id="managerKey" type="password" autocomplete="off" required>
+<label for="managerUrl">元数据服务网址</label><input id="managerUrl" placeholder="https://books6.mossdock.autos/__ext/meta" required>
+<label for="managerKey">元数据服务密钥（仅保存在此浏览器）</label><input id="managerKey" type="password" autocomplete="off" required>
 <button type="submit">保存并授权连接</button> <button type="button" id="resetDefaults">恢复默认地址</button> <button type="button" id="openAbs">打开 Audiobookshelf</button>
 <div id="status" role="status"></div>
 <p id="defaults" class="hint"></p>

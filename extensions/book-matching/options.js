@@ -35,7 +35,7 @@ document.querySelector('#settings').addEventListener('submit', async event => {
     await chrome.storage.local.set({absUrl, managerUrl, managerKey, customDomain: true});
     status.textContent = '配置已保存。请刷新 Audiobookshelf 页面。';
     try {
-      const response = await fetch(`${managerUrl}/api/health`, {cache: 'no-store', headers: {'X-ASR-Extension-Token': managerKey}});
+      const response = await fetch(`${managerUrl}/api/health`, {cache: 'no-store', headers: {'X-Meta-Token': managerKey}});
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       status.textContent += '\n✓ 转写服务连接成功。';
     } catch (error) {

@@ -1,0 +1,19 @@
+name: abs-meta
+services:
+  meta-bridge:
+    build: { context: ., dockerfile: Dockerfile }
+    image: local/abs-meta-bridge:1
+    container_name: meta-bridge
+    restart: unless-stopped
+    environment:
+      ABS_BASE_URL: http://audiobookshelf:80
+      ABS_API_TOKEN: ${ABS_API_TOKEN:?set ABS_API_TOKEN}
+      META_TOKEN: ${META_TOKEN:?set META_TOKEN}
+      PORT: '13382'
+    volumes:
+      - ${MANAGER_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/meta-backups:/data/metadata-backups
+    networks: [abs]
+networks:
+  abs:
+    external: true
+    name: ${ABS_NETWORK:-mossdock-abs}

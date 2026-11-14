@@ -55,6 +55,6 @@ docker compose -f stacks/edge/compose.yaml up -d --force-recreate tunnel
 
 ```bash
 curl -I https://books6.example.com/
-curl -H "X-ASR-Extension-Token: $EXTENSION_TOKEN" https://books6.example.com/__ext/asr/api/health
+curl -H "X-Meta-Token: $META_TOKEN" https://books6.example.com/__ext/meta/api/health
 bash scripts/healthcheck.sh
 ```

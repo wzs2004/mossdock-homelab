@@ -14,8 +14,9 @@
   const titleLabel=node('label'),title=node('input');title.placeholder='留空使用当前书名';title.maxLength=300;titleLabel.append(node('span','搜索书名'),title);
   const authorLabel=node('label'),author=node('input');author.placeholder='留空使用当前作者';author.maxLength=300;authorLabel.append(node('span','搜索作者（可选）'),author);
   const actions=node('div','','actions'),start=node('button','搜索候选书籍'),reload=node('button','刷新匹配源');actions.append(start,reload);
+  const chaptersLabel=node('label',''),chaptersBox=node('input');chaptersBox.type='checkbox';chaptersBox.checked=true;chaptersBox.id='useChapters';chaptersLabel.append(chaptersBox,node('span',' 同时用来源的章节时间轴替换现有章节'));
   const status=node('p','选择匹配来源后搜索'),progress=node('progress'),err=node('p','','error');progress.max=100;
-  const matches=node('div');box.append(close,heading,providerLabel,titleLabel,authorLabel,actions,status,progress,err,matches);dom.append(toggle,box);
+  const matches=node('div');box.append(close,heading,providerLabel,titleLabel,authorLabel,actions,chaptersLabel,status,progress,err,matches);dom.append(toggle,box);
   let id='',busy=false,searching=false,applying=false,loadingProviders=false,generation=0,visible=false;
   toggle.onclick=()=>{visible=!visible;box.hidden=!visible||!id;};
   async function api(action,value={}) {const r=await chrome.runtime.sendMessage({action,value});if(r?.error)throw Error(r.error);return r;}
@@ -63,18 +64,21 @@
       const row=node('article'), name=node('strong',candidate.title||'(无书名)');
       const authors=candidate.author||candidate.authorName||(Array.isArray(candidate.authors)?candidate.authors.map(a=>a.name||a).join('、'):'');
       const year=candidate.publishedYear||candidate.publishedDate||'';
-      const details=[authors,year,candidate.publisher].filter(Boolean).map(String).join(' · ');
+      const narrator=candidate.narrator||(Array.isArray(candidate.narrators)?candidate.narrators.join('、'):'');
+      const series=(candidate.series||[]).map(s=>s.series?`${s.series}${s.sequence?' #'+s.sequence:''}`:'').filter(Boolean).join('、');
+      const details=[authors,year,candidate.publisher,narrator?('旁白 '+narrator):'',series?('系列 '+series):'',Number.isFinite(candidate.chapterCount)?(candidate.chapterCount+' 章'):''].filter(Boolean).map(String).join(' · ');
       row.append(name,node('p',details,'muted'));
       if(candidate.subtitle)row.append(node('p',candidate.subtitle,'muted'));
       if(candidate.description)row.append(node('p',String(candidate.description).replace(/<[^>]*>/g,'').slice(0,400),'candidate'));
       const choose=node('button','选择此结果并应用');
       choose.onclick=async()=>{
         if(target!==id||searchGeneration!==generation||applying||searching)return;
-        if(!confirm(`将“${candidate.title}”的信息应用到当前书籍？原元数据会备份。`))return;
+        const chText=Number.isFinite(candidate.chapterCount)&&chaptersBox.checked?`，并用它替换章节（${candidate.chapterCount} 章）`:'';
+        if(!confirm(`将“${candidate.title}”的信息应用到当前书籍${chText}？\n将用来源数据覆盖作者、系列、年份、简介等字段，并替换章节。`))return;
         if(target!==id||searchGeneration!==generation||applying)return;
         applying=true;err.textContent='';updateBusy();
         try{
-          const response=await api('matchBook',{item_id:target,token:result.token,index:candidate.index});
+          const response=await api('matchBook',{item_id:target,token:result.token,index:candidate.index,chapters:!!chaptersBox.checked,provider:result.provider});
           if(target===id&&searchGeneration===generation)showProgress(response);
         }catch(e){if(target===id&&searchGeneration===generation){err.textContent=e.message;applying=false;updateBusy();}}
       };

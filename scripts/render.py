@@ -22,7 +22,7 @@ def write(path, text):
 # ---------- Caddy / cloudflared ----------
 vals = {
     'accel_books': P['accel_books'], 'accel_photos': P['accel_photos'],
-    'manager_port': P['manager'], 'lr_bridge_port': P['lr_bridge'],
+    'meta_port': P.get('meta', 13382), 'lr_bridge_port': P['lr_bridge'],
     'books_domain': D['books'], 'photos_domain': D['photos'], 'dav_domain': D['dav'],
     'cert_fullchain': 'fullchain.cer', 'cert_key': D['dav'].replace('.', '.') + '.key',
     'tunnel_id': site['cloudflare']['tunnel_id'],
@@ -56,36 +56,9 @@ ABS = f"{N['abs']}"
 merge_env(ROOT/'stacks/audiobookshelf/.env', {
     'TZ': S['timezone'], 'ABS_PORT': P['abs'],
     'ABS_DATA': f"{S['data_root']}/Audiobookshelf", 'ABS_NETWORK': ABS})
-merge_env(ROOT/'stacks/transcription-manager/.env', {
-    'ABS_DATA': f"{S['data_root']}/Audiobookshelf",
-    'MANAGER_DATA': f"{S['data_root']}/Audiobookshelf/transcription-manager",
-    'MODEL_DIR': f"{S['data_root']}/whisper-models",
-    'ABS_NETWORK': ABS, 'WHISPER_MODEL_FILE': 'ggml-large-v3-turbo-q5_0.bin',
-    'WHISPER_LANGUAGE': 'en', 'WHISPER_THREADS': 4,
-    'AUTO_SCAN_SECONDS': 60, 'AUTO_SETTLE_SECONDS': 300})
-merge_env(ROOT/'stacks/lr-bridge/.env', {
-    'ABS_DATA': f"{S['data_root']}/Audiobookshelf", 'ABS_NETWORK': ABS, 'LR_NETWORK': N['lr']})
-merge_env(ROOT/'stacks/immich/.env', {
-    'UPLOAD_LOCATION': f"{S['data_root']}/Immich",
-    'DB_DATA_LOCATION': f"{S['data_root']}/Immich/pgdata",
-    'DB_USERNAME': 'postgres', 'DB_DATABASE_NAME': 'immich',
-    'IMMICH_VERSION': 'v3.3.5', 'TZ': S['timezone'],
-    'IMMICH_PORT': P['immich'], 'IMMICH_PUBLIC_PORT': P['immich_public'],
-    'IMMICH_IDLE_SECONDS': 1800, 'IMMICH_NETWORK': N['immich']})
-merge_env(ROOT/'stacks/edge/.env', {
-    'EDGE_NETWORK': 'mossdock-edge', 'ABS_NETWORK': ABS, 'LR_NETWORK': N['lr'],
-    'IMMICH_NETWORK': N['immich'], 'IPV6_HTTPS_PORT': P['ipv6_https'],
-    'CERT_DIR': site['certificate']['dir'],
-    'CLOUDFLARE_TUNNEL_CREDENTIALS': './cloudflared/tunnel-credentials.json'})
-merge_env(ROOT/'stacks/webdav/.env', {
-    'WEBDAV_DATA': f"{S['nas_root']}/WebDAV",
-    'WEBDAV_HTPASSWD': f"/Users/{S['user']}/Library/Application Support/Mossdock WebDAV/htpasswd",
-    'EDGE_NETWORK': 'mossdock-edge'})
-
 # ---------- 扩展 config.js ----------
 origin = f"https://{D['books']}"
-for slug, extra in [('book-matching', ('MANAGER_URL', '/__ext/asr')),
-                    ('transcription-manager', ('MANAGER_URL', '/__ext/asr')),
+for slug, extra in [('book-matching', ('MANAGER_URL', '/__ext/meta')),
                     ('language-reactor', ('BRIDGE_URL', '/__ext/lr'))]:
     write(ROOT/'extensions'/slug/'config.js',
           f"/* 由 scripts/render.py 生成：改 site.json 后重跑即可 */\n"

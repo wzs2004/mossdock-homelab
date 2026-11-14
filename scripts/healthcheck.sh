@@ -7,7 +7,7 @@ import json, subprocess, urllib.request, urllib.error
 site = json.load(open('site.json')); p = site['ports']
 checks = [
     ('audiobookshelf', f"http://127.0.0.1:{p['abs']}/"),
-    ('transcription-manager', f"http://127.0.0.1:{p['manager']}/api/health"),
+    ('meta-bridge', f"http://127.0.0.1:{p.get('meta',13382)}/api/health"),
     ('lr-bridge', f"http://127.0.0.1:{p['lr_bridge']}/"),
     ('immich-gate', f"http://127.0.0.1:{p['immich_public']}/"),
 ]
