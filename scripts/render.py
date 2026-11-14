@@ -65,7 +65,8 @@ merge_env(ROOT/'stacks/transcription-manager/.env', {
     'ABS_NETWORK': ABS,
     'WHISPER_MODEL_FILE': 'ggml-large-v3-turbo-q5_0.bin',
     'WHISPER_LANGUAGE': 'en', 'WHISPER_THREADS': 4,
-    'AUTO_SCAN_SECONDS': 60, 'AUTO_SETTLE_SECONDS': 300})
+    'AUTO_SCAN_SECONDS': 60, 'AUTO_SETTLE_SECONDS': 300,
+    'NATIVE_ASR_URL': 'http://host.docker.internal:13385'})
 # ---------- 扩展 config.js ----------
 origin = f"https://{D['books']}"
 for slug, extra in [('book-matching', ('MANAGER_URL', '/__ext/meta')),

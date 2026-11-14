@@ -15,6 +15,41 @@ docker compose -f stacks/transcription-manager/compose.yaml up -d --build
 
 底座已经存在时，只需第二条命令。
 
+## Metal 加速（强烈建议开启）
+
+Docker 容器拿不到 Apple GPU，容器内的 whisper.cpp 只能跑 CPU。实测同一段
+60 秒音频：
+
+| 路径 | 耗时 | 相对实时 |
+|---|---|---|
+| 容器内 CPU（4 线程 / 8 线程） | 178 s / 129 s | 0.3–0.5x |
+| 宿主 Metal 常驻引擎 | **10.8 s** | **5.6x** |
+
+差 12–16 倍。做法是把宿主上已编译的 Metal 版 whisper.cpp 跑成常驻用户服务，
+容器通过 `NATIVE_ASR_URL` 调用（Docker Desktop 的 `host.docker.internal`
+能访问宿主 127.0.0.1 端口）。
+
+```bash
+# 需要一份带 Metal 的 whisper.cpp 编译产物（build/bin/whisper-server 等）
+python3 stacks/transcription-manager/native/install_native_asr.py
+docker compose -f stacks/transcription-manager/compose.yaml up -d --force-recreate
+```
+
+脚本会：复制引擎到 `~/Library/Application Support/audiobookshelf-native-asr/`、
+装两个纯 Python 依赖、生成密钥、写 `NATIVE_ASR_URL` / `NATIVE_ASR_KEY` 到本 stack 的
+`.env`、注册 LaunchAgent `local.audiobookshelf.native-asr`（登录自启、挂了自动重启）。
+
+验证：
+
+```bash
+KEY=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/Library/Application Support/audiobookshelf-native-asr/config.json')))['key'])")
+curl -s -H "X-ASR-Key: $KEY" http://127.0.0.1:13385/health
+# {"engine": "ggml-large-v3-turbo-q5_0.bin · resident Metal", ..., "ready": true}
+```
+
+**回退**：把 `.env` 里的 `NATIVE_ASR_URL` 置空并重建容器，即回到 Docker CPU 模式
+（会明显变慢，不建议）。
+
 ## Whisper 模型
 
 模型不随镜像分发，放在 `site.json` 的 `site.models_dir`（默认
