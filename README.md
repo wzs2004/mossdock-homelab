@@ -17,7 +17,7 @@ Chrome 从 137 版起**不再允许从商店外静默安装扩展**，所以「�
 1. 下载并双击 [`install/install-macos.command`](install/install-macos.command)（首次可能需右键 → 打开）
    或直接运行：
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/wzs2004/audiobookshelf-plugins/main/install/install-macos.command | bash
+   curl -fsSL https://wzs2004.github.io/audiobookshelf-plugins/install-macos.command -o /tmp/install.command && bash /tmp/install.command
    ```
 2. Chrome 会打开 `chrome://extensions`，右上角打开 **开发者模式**
 3. 把 `~/Downloads/AudiobookshelfPlugins/` 里的三个文件夹拖进页面
