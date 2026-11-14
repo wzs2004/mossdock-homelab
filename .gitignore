@@ -11,3 +11,6 @@ stacks/edge/ipv6/certs.loaded
 stacks/edge/ipv6/*.log
 *.pem
 *.key
+
+# Chrome Web Store 本机凭证（正常放在 ~/.config，这里再兜一层）
+.cws-creds.json

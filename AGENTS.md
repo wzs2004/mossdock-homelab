@@ -90,7 +90,13 @@ python3 scripts/package_extensions.py     # dist/*.zip + 版本号
 # 打 tag 发 Release（GitHub API 或网页）
 ```
 
-扩展版本号在 `scripts/package_extensions.py` 的 `VERSIONS`，改完要递增。
+扩展版本号在 `scripts/package_extensions.py` 的 `VERSIONS`，改完要递增
+（`extensions/<x>/manifest.json` 里的 `version` 要同步改，否则会打警告）。
+
+**发到 Chrome 应用商店是全自动的**：往 `main` 推改动过 `extensions/<x>/**` 的提交，
+GitHub Actions 会打包 → 上传 → 提交审核（`cws-v*` 标签 = 三个全发）。
+配置与排错见 [docs/CWS_PUBLISH.md](docs/CWS_PUBLISH.md)；手动发用
+`python3 scripts/cws.py upload <slug> --publish`。
 
 ## 7. 验证清单
 

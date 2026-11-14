@@ -15,6 +15,10 @@ for slug, version in VERSIONS.items():
     shutil.copytree(src, target, ignore=shutil.ignore_patterns(*EXCLUDE, '*.zip'))
     mf = target / 'manifest.json'
     data = json.loads(mf.read_text(encoding='utf-8'))
+    src_version = data.get('version')
+    if src_version != version:
+        print(f'⚠ {slug}: manifest.json 是 {src_version}，VERSIONS 是 {version}；'
+              f'以 VERSIONS 打包。发商店前请把两处对齐。')
     data['version'] = version
     mf.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     zpath = OUT / f'abs-{slug}-{version}.zip'

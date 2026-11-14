@@ -1,0 +1,113 @@
+name: 发布到 Chrome 应用商店
+
+# 什么时候跑：
+#   1) 往 main 推且动过 extensions/<某个扩展>/** → 只发这个扩展
+#   2) 推 cws-v* 标签 → 三个扩展全发
+#   3) 手动 Run workflow → 选一个或全部
+on:
+  push:
+    branches: [main]
+    paths:
+      - "extensions/**"
+      - "scripts/package_extensions.py"
+      - "scripts/cws.py"
+      - "scripts/cws-items.json"
+      - ".github/workflows/cws-publish.yml"
+    tags: ["cws-v*"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "发哪个扩展"
+        type: choice
+        default: all
+        options: [all, book-matching, transcription-manager, language-reactor]
+      dry_run:
+        description: "只演练，不真的上传"
+        type: boolean
+        default: false
+
+concurrency:
+  group: cws-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 取代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 决定发哪些扩展
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            target="${{ inputs.target }}"
+          elif [ "${GITHUB_REF#refs/tags/}" != "$GITHUB_REF" ]; then
+            target="all"                                    # 标签 → 全发
+          else
+            before="${{ github.event.before }}"
+            if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ] \
+               || ! git cat-file -e "$before^{commit}" 2>/dev/null; then
+              before="$(git rev-list --max-parents=0 HEAD | head -1)"   # 首次推送：全发
+            fi
+            target="$(git diff --name-only "$before" "${{ github.sha }}" -- extensions/ \
+                      | cut -d/ -f2 | sort -u | tr '\n' ' ')"
+          fi
+          target="$(echo "$target" | xargs || true)"        # 去空白
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          if [ -z "$target" ]; then
+            echo "没有扩展文件变动，跳过发布"
+          else
+            echo "要发布：$target"
+          fi
+
+      - name: 打包
+        if: steps.plan.outputs.target != ''
+        run: python3 scripts/package_extensions.py
+
+      - name: 上传并提交审核
+        if: steps.plan.outputs.target != ''
+        env:
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          TARGET: ${{ steps.plan.outputs.target }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          extra=""
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            extra="--dry-run"
+          fi
+          for slug in $TARGET; do
+            echo "::group::$slug"
+            python3 scripts/cws.py upload "$slug" --publish --no-build $extra
+            echo "::endgroup::"
+          done
+
+  # 出错时在 Actions 页面上直接看到提示，而不是只有一封 GitHub 邮件
+  notify-failure:
+    needs: publish
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 失败提示
+        run: |
+          echo "::error::Chrome 应用商店发布失败。常见原因："
+          echo "::error::1. CWS_* secrets 过期或没配（重跑 python3 scripts/cws.py login）"
+          echo "::error::2. manifest 里的 version 没往上加（商店不接受重复版本号）"
+          echo "::error::3. itemId 填错 / 不是这个 publisher 下的条目"
+          echo "::error::4. 上传后校验有 warning 被 blockOnWarnings 拦下"
