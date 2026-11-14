@@ -15,6 +15,23 @@ docker compose -f stacks/transcription-manager/compose.yaml up -d --build
 
 底座已经存在时，只需第二条命令。
 
+## Whisper 模型
+
+模型不随镜像分发，放在 `site.json` 的 `site.models_dir`（默认
+`/Users/a997/Library/Application Support/mossdock/models`，在内置 SSD 上，
+避免每次转写都从机械盘读 500 MB），容器内挂载为 `/models`。
+
+缺失时容器日志与面板会报「找不到 Whisper 模型」。恢复：
+
+```bash
+mkdir -p "$HOME/Library/Application Support/mossdock/models"
+curl -L -C - -o "$HOME/Library/Application Support/mossdock/models/ggml-large-v3-turbo-q5_0.bin" \
+  https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin
+ls -lh "$HOME/Library/Application Support/mossdock/models/"   # 应为 547 MB
+```
+
+换模型时改 `.env` 的 `WHISPER_MODEL_FILE` 并保持同名文件在 `models_dir` 下。
+
 ## 必需的密钥（写进 `.env`，不提交）
 
 ```dotenv

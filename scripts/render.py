@@ -61,7 +61,7 @@ merge_env(ROOT/'stacks/transcription-manager/.env', {
     'TZ': S['timezone'], 'MANAGER_PORT': P.get('manager', 13384),
     'ABS_DATA': f"{S['data_root']}/Audiobookshelf",
     'MANAGER_DATA': f"{S['data_root']}/Audiobookshelf/transcription-manager",
-    'MODEL_DIR': f"{S['data_root']}/whisper-models",
+    'MODEL_DIR': S.get('models_dir', f"{S['data_root']}/whisper-models"),
     'ABS_NETWORK': ABS,
     'WHISPER_MODEL_FILE': 'ggml-large-v3-turbo-q5_0.bin',
     'WHISPER_LANGUAGE': 'en', 'WHISPER_THREADS': 4,

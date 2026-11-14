@@ -4,7 +4,8 @@
     "timezone": "Asia/Shanghai",
     "user": "a997",
     "nas_root": "/Volumes/NAS",
-    "data_root": "/Volumes/NAS/Apps"
+    "data_root": "/Volumes/NAS/Apps",
+    "models_dir": "/Users/a997/Library/Application Support/mossdock/models"
   },
   "domains": {
     "base": "mossdock.autos",
