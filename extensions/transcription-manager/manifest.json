@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Audiobookshelf · 转写管理",
+  "version": "1.0.0",
+  "description": "查看转写队列，按书开始转写并查看进度",
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "转写管理设置"
+  },
+  "host_permissions": [
+    "https://books6.mossdock.autos/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

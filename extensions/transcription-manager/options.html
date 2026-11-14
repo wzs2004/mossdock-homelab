@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>转写管理 · 服务器设置</title>
+<style>
+body{font:15px/1.6 system-ui,-apple-system,sans-serif;max-width:620px;margin:40px auto;padding:0 20px;background:#0e1929;color:#eaf4fa}
+h1{font-size:22px}p{color:#a5bfcd}label{display:block;margin:20px 0 6px;font-weight:600}
+input{box-sizing:border-box;width:100%;padding:11px 12px;background:#172c41;color:#fff;border:1px solid #526779;border-radius:8px}
+button{padding:11px 18px;background:#13836b;color:#fff;border:0;border-radius:8px;font:inherit;cursor:pointer;margin-top:18px}
+#status{white-space:pre-wrap;margin-top:16px;color:#9fe5bd}
+</style>
+</head>
+<body>
+<h1>Audiobookshelf · 转写管理</h1>
+<p>连接到已经运行的 Audiobookshelf 与转写服务。地址由仓库的 <code>site.json</code> 生成，通常无需修改。</p>
+<form id="settings">
+  <label for="absUrl">Audiobookshelf 网址</label>
+  <input id="absUrl" readonly>
+  <label for="managerKey">转写服务密钥（只保存在本浏览器）</label>
+  <input id="managerKey" type="password" autocomplete="off" required>
+  <button type="submit">保存并授权连接</button>
+  <div id="status" role="status"></div>
+</form>
+<script src="config.js"></script>
+<script src="options.js"></script>
+</body></html>

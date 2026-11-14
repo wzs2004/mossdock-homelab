@@ -59,7 +59,8 @@ merge_env(ROOT/'stacks/audiobookshelf/.env', {
 # ---------- 扩展 config.js ----------
 origin = f"https://{D['books']}"
 for slug, extra in [('book-matching', ('MANAGER_URL', '/__ext/meta')),
-                    ('language-reactor', ('BRIDGE_URL', '/__ext/lr'))]:
+                    ('language-reactor', ('BRIDGE_URL', '/__ext/lr')),
+                    ('transcription-manager', ('MANAGER_URL', '/__ext/asr'))]:
     write(ROOT/'extensions'/slug/'config.js',
           f"/* 由 scripts/render.py 生成：改 site.json 后重跑即可 */\n"
           f"var ABS_URL = '{origin}';\nvar {extra[0]} = ABS_URL + '{extra[1]}';\n")
