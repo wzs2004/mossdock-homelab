@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Language Reactor 桥接 · 设置</title>
+<style>
+body{font:15px/1.55 system-ui,-apple-system,sans-serif;max-width:700px;margin:35px auto;padding:0 20px;background:#0e1929;color:#eaf4fa}
+h1{font-size:24px}p{color:#a5bfcd}label{display:block;margin:22px 0 6px;font-weight:600}
+input{box-sizing:border-box;width:100%;padding:11px 12px;background:#172c41;color:white;border:1px solid #526779;border-radius:8px}
+button{padding:11px 18px;background:#13836b;color:white;border:0;border-radius:8px;font:inherit;cursor:pointer;margin-top:19px}
+a{color:#7de7d1}#status{white-space:pre-wrap;margin-top:16px;color:#9fe5bd}
+</style></head><body>
+<h1>Audiobookshelf → Language Reactor</h1>
+<p>通过 HTTPS 域名连接家中的服务器，打开书库中的音频和 SRT 字幕进行学习。</p>
+<form id="settings">
+<label for="absUrl">Audiobookshelf 网址</label><input id="absUrl" placeholder="https://books6.mossdock.autos" required>
+<label for="bridgeUrl">字幕桥接服务网址</label><input id="bridgeUrl" placeholder="https://books6.mossdock.autos/__ext/lr" required>
+<label for="bridgeKey">桥接服务密钥（仅保存在此浏览器）</label><input id="bridgeKey" type="password" autocomplete="off" required>
+<button type="submit">保存并授权连接</button> <button type="button" id="openAbs">打开 Audiobookshelf</button>
+<div id="status" role="status"></div>
+</form>
+<p>服务器通过 HTTPS 代理和访问密钥提供接口。插件仅在选中音轨时向 Language Reactor 页面传送音频与字幕。</p>
+<script src="config.js"></script>
+<script src="options.js"></script>
+</body></html>

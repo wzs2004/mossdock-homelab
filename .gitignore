@@ -1,0 +1,5 @@
+.DS_Store
+*.zip
+!dist/*.zip
+auth.js
+preset.js
