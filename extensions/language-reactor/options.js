@@ -1,5 +1,6 @@
 const fields = ['absUrl', 'bridgeUrl', 'bridgeKey'];
 const status = document.querySelector('#status');
+
 function normalizedURL(raw, allowPath = false) {
   const url = new URL(raw.trim());
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || (!allowPath && url.pathname !== '/') || url.search || url.hash) {
@@ -11,13 +12,17 @@ function permissionPattern(origin) {
   const url = new URL(origin);
   return `${url.protocol}//${url.hostname}/*`;
 }
-chrome.storage.local.get(fields).then(config => {
+
+chrome.storage.local.get([...fields, 'customDomain']).then(config => {
   for (const key of fields) {
     const input = document.getElementById(key);
-    input.value = key === 'absUrl' ? ABS_URL : key === 'bridgeUrl' ? BRIDGE_URL : (config[key] || '');
-    if (key !== 'bridgeKey') input.readOnly = true;
+    const fallback = key === 'absUrl' ? ABS_URL : key === 'bridgeUrl' ? BRIDGE_URL : '';
+    input.value = config[key] || fallback;
   }
+  const note = document.getElementById('defaults');
+  if (note) note.textContent = `内置默认：${ABS_URL}（仓库换域名后，重新加载扩展即可自动跟随；手动改过则保留你的设置）`;
 });
+
 document.querySelector('#settings').addEventListener('submit', async event => {
   event.preventDefault();
   try {
@@ -40,7 +45,8 @@ document.querySelector('#settings').addEventListener('submit', async event => {
     }
   } catch (error) { status.textContent = `保存失败：${error.message}`; }
 });
+
 document.getElementById('openAbs').addEventListener('click', () => {
-  try { chrome.tabs.create({url: ABS_URL}); }
+  try { chrome.tabs.create({url: document.getElementById('absUrl').value || ABS_URL}); }
   catch (error) { status.textContent = error.message; }
 });
