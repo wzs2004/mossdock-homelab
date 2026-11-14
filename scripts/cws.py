@@ -23,6 +23,7 @@ import json
 import os
 import re
 import socketserver
+import ssl
 import subprocess
 import sys
 import threading
@@ -88,17 +89,29 @@ def config() -> dict:
 
 
 def http_request(url: str, method: str = "GET", body: bytes | None = None,
-                 headers: dict | None = None, timeout: int = 120) -> tuple[int, bytes]:
+                 headers: dict | None = None, timeout: int = 120,
+                 retries: int = 3) -> tuple[int, bytes]:
     req = urllib.request.Request(url, data=body, method=method)
     for k, v in (headers or {}).items():
         req.add_header(k, v)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, resp.read()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read()
-    except urllib.error.URLError as e:
-        die(f"网络错误（{url}）：{e.reason}\n  ← 需要能直连 Google；本机有代理时设 HTTPS_PROXY")
+    last = None
+    for attempt in range(1, retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.status, resp.read()
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 500, 502, 503, 504) and attempt < retries:
+                last = f"HTTP {e.code}"
+                time.sleep(2 * attempt)
+                continue
+            return e.code, e.read()
+        except (urllib.error.URLError, OSError, ssl.SSLError) as e:
+            # 直连 Google 偶尔会被掐断（EOF / reset），重试几次通常就好了
+            last = getattr(e, "reason", e)
+            if attempt < retries:
+                time.sleep(2 * attempt)
+                continue
+            die(f"网络错误（{url}）：{last}\n  ← 需要能直连 Google；本机有代理时设 HTTPS_PROXY")
 
 
 def parse_json(raw: bytes, what: str) -> dict:
@@ -362,6 +375,14 @@ def cmd_upload(args):
             continue
 
         if args.publish:
+            # 还是草稿（从没发布过）就别提交审核了：商店会因为「商品详情不完整」直接拒，
+            # 但上传本身已经成功。等后台补完商品详情、首次提交过之后，这里就会自动提交。
+            status_body = api_call(
+                f"/v2/publishers/{pid}/items/{iid}:fetchStatus", token, what="查状态")
+            if not status_body.get("publishedItemRevisionStatus") and not args.force_publish:
+                print("   ⚠ 该条目还是草稿（未发布过），跳过提交审核；"
+                      "补齐商品详情后手动「提请审核」一次即可，之后就会自动走。")
+                continue
             body = json.dumps({
                 "publishType": "STAGED_PUBLISH" if args.staged else "DEFAULT_PUBLISH",
                 "blockOnWarnings": bool(args.block_on_warnings),
@@ -426,6 +447,7 @@ def main():
     p.add_argument("--publish", action="store_true", help="上传后提交审核")
     p.add_argument("--staged", action="store_true", help="只提交到预发布（不公开）")
     p.add_argument("--block-on-warnings", action="store_true")
+    p.add_argument("--force-publish", action="store_true", help="草稿也强行提交审核")
     p.add_argument("--no-build", action="store_true", help="不重新打包，直接用 dist 里现成的 zip")
     p.add_argument("--publisher")
     p.add_argument("--dry-run", action="store_true")
