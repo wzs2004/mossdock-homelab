@@ -1,0 +1,11 @@
+tunnel: {{tunnel_id}}
+credentials-file: /run/secrets/tunnel-credentials.json
+
+ingress:
+  - hostname: {{books_tunnel}}
+    service: http://mossdock-accelerator:{{accel_books}}
+  - hostname: {{photos_tunnel}}
+    service: http://mossdock-accelerator:{{accel_photos}}
+  - hostname: {{dav_tunnel}}
+    service: http://mossdock-webdav:8080
+  - service: http_status:404

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把 extensions/ 下三个扩展打包到 dist/，排除本地密钥文件，可直接上传 Chrome 应用商店或发布到 Release。"""
+"""把 extensions/ 下三个扩展打包到 dist/（排除本地密钥），用于 Release 或商店。"""
 import json, pathlib, shutil, zipfile, hashlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent

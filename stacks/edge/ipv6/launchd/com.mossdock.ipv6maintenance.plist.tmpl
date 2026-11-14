@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.mossdock.ipv6maintenance</string>
+  <key>ProgramArguments</key><array><string>/bin/sh</string><string>__EDGE_DIR__/maintenance.sh</string></array>
+  <key>WorkingDirectory</key><string>__EDGE_DIR__</string>
+  <key>StartInterval</key><integer>300</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>__EDGE_DIR__/maintenance.log</string>
+  <key>StandardErrorPath</key><string>__EDGE_DIR__/maintenance.log</string>
+</dict></plist>

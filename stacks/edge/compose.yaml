@@ -1,0 +1,54 @@
+name: mossdock-edge
+
+services:
+  accelerator:
+    image: caddy:2-alpine
+    container_name: mossdock-accelerator
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    read_only: true
+    tmpfs: [/config, /data]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [edge, abs, lr, immich]
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: mossdock-tunnel
+    restart: unless-stopped
+    depends_on: [accelerator]
+    command: [tunnel, --no-autoupdate, --protocol, http2, --config, /etc/cloudflared/config.yml, run]
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ${CLOUDFLARE_TUNNEL_CREDENTIALS:-./cloudflared/tunnel-credentials.json}:/run/secrets/tunnel-credentials.json:ro
+    dns: [223.5.5.5, 119.29.29.29]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [edge, abs, lr, immich]
+
+  # 公网 IPv6 直连：relay.py 在宿主机 443 -> 127.0.0.1:18443
+  ipv6-https:
+    image: caddy:2-alpine
+    container_name: mossdock-ipv6-https
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${IPV6_HTTPS_PORT:-18443}:443"
+    volumes:
+      - ./ipv6/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CERT_DIR}:/certs:ro
+    networks: [edge, abs, lr]
+
+networks:
+  edge:
+    name: ${EDGE_NETWORK:-mossdock-edge}
+  abs:
+    external: true
+    name: ${ABS_NETWORK:-mossdock-abs}
+  lr:
+    external: true
+    name: ${LR_NETWORK:-mossdock-lr}
+  immich:
+    external: true
+    name: ${IMMICH_NETWORK:-mossdock-immich}

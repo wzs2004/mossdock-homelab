@@ -1,0 +1,21 @@
+{
+    auto_https disable_redirects
+    servers {
+        protocols h1 h2
+    }
+}
+
+dav6.mossdock.autos {
+    tls /certs/fullchain.cer /certs/dav6.mossdock.autos.key
+    reverse_proxy mossdock-webdav:8080
+}
+
+photos6.mossdock.autos {
+    tls /certs/fullchain.cer /certs/dav6.mossdock.autos.key
+    reverse_proxy mossdock-accelerator:8082
+}
+
+books6.mossdock.autos {
+    tls /certs/fullchain.cer /certs/dav6.mossdock.autos.key
+    reverse_proxy mossdock-accelerator:8081
+}

@@ -1,0 +1,27 @@
+name: abs-lr
+services:
+  abs-lr-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: local/abs-lr-bridge:1
+    container_name: abs-lr-bridge
+    restart: unless-stopped
+    environment:
+      LR_BRIDGE_LISTEN: 0.0.0.0
+      LR_BRIDGE_LIBRARY: /audiobooks
+      LR_BRIDGE_LIBRARIES: '{"audiobooks": "/audiobooks", "audiobooks115": "/audiobooks115"}'
+      ABS_BASE_URL: http://audiobookshelf:80
+      ABS_API_TOKEN: ${ABS_API_TOKEN:?set ABS_API_TOKEN in .env}
+    volumes:
+      - ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks:/audiobooks:ro
+      - ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks115:/audiobooks115:ro
+      - ./config.json:/app/config.json:ro
+    networks: [abs, lr]
+networks:
+  abs:
+    external: true
+    name: ${ABS_NETWORK:-mossdock-abs}
+  lr:
+    external: true
+    name: ${LR_NETWORK:-mossdock-lr}

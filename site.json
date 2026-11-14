@@ -1,0 +1,43 @@
+{
+  "site": {
+    "name": "mossdock",
+    "timezone": "Asia/Shanghai",
+    "user": "a997",
+    "nas_root": "/Volumes/NAS",
+    "data_root": "/Volumes/NAS/Apps"
+  },
+  "domains": {
+    "base": "mossdock.autos",
+    "books": "books6.mossdock.autos",
+    "photos": "photos6.mossdock.autos",
+    "dav": "dav6.mossdock.autos",
+    "books_tunnel": "books.mossdock.autos",
+    "photos_tunnel": "photos.mossdock.autos",
+    "dav_tunnel": "dav.mossdock.autos",
+    "files_tunnel": "files.mossdock.autos"
+  },
+  "ports": {
+    "abs": 13378,
+    "manager": 13384,
+    "lr_bridge": 13381,
+    "immich": 12283,
+    "immich_public": 2283,
+    "accel_books": 8081,
+    "accel_photos": 8082,
+    "ipv6_https": 18443
+  },
+  "networks": {
+    "abs": "mossdock-abs",
+    "lr": "mossdock-lr",
+    "immich": "mossdock-immich"
+  },
+  "cloudflare": {
+    "tunnel_name": "mossdock",
+    "tunnel_id": "2c9cd87e-956d-4e20-9897-f3931d36635b"
+  },
+  "certificate": {
+    "mode": "acme",
+    "dir": "/Users/a997/Library/Application Support/Mossdock IPv6/certs",
+    "acme_home": "/Users/a997/Library/MossdockIPv6"
+  }
+}

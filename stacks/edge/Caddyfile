@@ -1,0 +1,33 @@
+{
+    auto_https off
+    admin off
+    servers {
+        trusted_proxies static private_ranges
+    }
+}
+
+# Audiobookshelf + 扩展专用接口
+:8081 {
+    encode zstd gzip
+    handle_path /__ext/asr/* {
+        reverse_proxy transcription-manager:13384 {
+            header_up Host 127.0.0.1
+        }
+    }
+    handle_path /__ext/lr/* {
+        reverse_proxy abs-lr-bridge:13381
+    }
+    handle {
+        @versioned path_regexp abs ^/audiobookshelf/_nuxt/[a-f0-9]+\.(js|css)$
+        header @versioned >Cache-Control "public, max-age=31536000, immutable"
+        reverse_proxy audiobookshelf:80
+    }
+}
+
+# Immich
+:8082 {
+    encode zstd gzip
+    @versioned path /_app/immutable/*
+    header @versioned >Cache-Control "public, max-age=31536000, immutable"
+    reverse_proxy immich-gate:2283
+}

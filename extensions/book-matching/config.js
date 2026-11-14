@@ -1,3 +1,3 @@
-/* 一键换域名：改这一行后运行 scripts/apply_domain.py，或直接改三个扩展的 config.js */
+/* 由 scripts/render.py 生成：改 site.json 后重跑即可 */
 var ABS_URL = 'https://books6.mossdock.autos';
 var MANAGER_URL = ABS_URL + '/__ext/asr';

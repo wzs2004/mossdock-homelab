@@ -1,0 +1,31 @@
+name: abs
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${ABS_PORT:-13378}:80"
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - type: bind
+        source: ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/config
+        target: /config
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/metadata
+        target: /metadata
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks
+        target: /audiobooks
+        bind: { create_host_path: false }
+      - type: bind
+        source: ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks115
+        target: /audiobooks115
+        bind: { create_host_path: false }
+    networks: [abs]
+networks:
+  abs:
+    name: ${ABS_NETWORK:-mossdock-abs}

@@ -1,0 +1,11 @@
+tunnel: 2c9cd87e-956d-4e20-9897-f3931d36635b
+credentials-file: /run/secrets/tunnel-credentials.json
+
+ingress:
+  - hostname: books.mossdock.autos
+    service: http://mossdock-accelerator:8081
+  - hostname: photos.mossdock.autos
+    service: http://mossdock-accelerator:8082
+  - hostname: dav.mossdock.autos
+    service: http://mossdock-webdav:8080
+  - service: http_status:404

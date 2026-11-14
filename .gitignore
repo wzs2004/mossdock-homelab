@@ -1,5 +1,13 @@
 .DS_Store
 *.zip
 !dist/*.zip
-auth.js
-preset.js
+# secrets
+stacks/*/.env
+stacks/lr-bridge/config.json
+stacks/edge/cloudflared/tunnel-credentials.json
+stacks/edge/ipv6/dns-auth.json
+stacks/edge/ipv6/certs/
+stacks/edge/ipv6/certs.loaded
+stacks/edge/ipv6/*.log
+*.pem
+*.key

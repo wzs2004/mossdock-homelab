@@ -1,0 +1,21 @@
+{
+    auto_https disable_redirects
+    servers {
+        protocols h1 h2
+    }
+}
+
+{{dav_domain}} {
+    tls /certs/{{cert_fullchain}} /certs/{{cert_key}}
+    reverse_proxy mossdock-webdav:8080
+}
+
+{{photos_domain}} {
+    tls /certs/{{cert_fullchain}} /certs/{{cert_key}}
+    reverse_proxy mossdock-accelerator:{{accel_photos}}
+}
+
+{{books_domain}} {
+    tls /certs/{{cert_fullchain}} /certs/{{cert_key}}
+    reverse_proxy mossdock-accelerator:{{accel_books}}
+}

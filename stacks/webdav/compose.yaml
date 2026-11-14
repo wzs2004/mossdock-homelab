@@ -1,0 +1,16 @@
+name: mossdock-webdav
+services:
+  webdav:
+    image: rclone/rclone:latest
+    container_name: mossdock-webdav
+    restart: unless-stopped
+    command: ["serve","webdav","/data","--addr",":8080","--htpasswd","/etc/webdav.htpasswd",
+              "--response-header","Cache-Control: private, no-store"]
+    volumes:
+      - ${WEBDAV_DATA:-/Volumes/NAS/WebDAV}:/data
+      - ${WEBDAV_HTPASSWD:-/Users/a997/Library/Application Support/Mossdock WebDAV/htpasswd}:/etc/webdav.htpasswd:ro
+    networks: [edge]
+networks:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:-mossdock-edge}
