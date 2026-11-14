@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>隐私权政策 · Audiobookshelf 插件</title>
+<style>
+:root{color-scheme:dark}
+body{margin:0;font:16px/1.7 system-ui,-apple-system,"PingFang SC",sans-serif;background:#0b1622;color:#e8f3fa}
+.wrap{max-width:760px;margin:0 auto;padding:64px 24px}
+h1{font-size:30px;margin:0 0 6px}
+h2{font-size:19px;margin:32px 0 8px}
+.sub{color:#9db6c6;margin:0 0 32px}
+a{color:#7fd0f0}
+code{background:#0d1f2e;border:1px solid #1e3a52;border-radius:6px;padding:2px 6px;font-size:14px}
+.note{background:#1a2b1f;border:1px solid #2c4a33;color:#bde6c5;padding:12px 16px;border-radius:10px;font-size:15px;margin:24px 0}
+footer{margin-top:48px;font-size:13px;color:#7b93a5}
+</style>
+</head>
+<body><div class="wrap">
+<h1>隐私权政策</h1>
+<p class="sub">适用于本仓库发布的 Chrome 扩展：转写管理、书籍元数据匹配、Language Reactor 桥接<br>
+Last updated / 最后更新：2026-11-14</p>
+
+<div class="note">一句话：扩展只在你的浏览器和你自己的服务器之间传数据，开发者不收集、不接收、不转卖任何数据。</div>
+
+<h2>1. 扩展做什么</h2>
+<p>这三个扩展是自托管 <b>Audiobookshelf</b>（有声书服务器）的辅助工具，用来查看转写队列、匹配书籍元数据、把音轨和字幕送进 Language Reactor。它们只在你当前打开的网页上工作。</p>
+
+<h2>2. 我们收集什么</h2>
+<p><b>什么都不收集。</b>扩展没有埋点、没有统计、没有崩溃上报，也不会把任何数据发送给开发者或第三方服务器。</p>
+
+<h2>3. 数据存在哪</h2>
+<p>服务器地址、访问令牌、你填写的偏好设置，都存在你自己的浏览器里（<code>chrome.storage</code> / <code>localStorage</code>），不离开本机。卸载扩展即删除。</p>
+
+<h2>4. 数据发给谁</h2>
+<p>只有两个目的地：</p>
+<ul>
+<li>你自己配置的 Audiobookshelf 服务器（域名由你在扩展选项页填写，默认是你的自建实例）；</li>
+<li><a href="https://www.languagereactor.com" target="_blank" rel="noreferrer">languagereactor.com</a> —— 仅在你点击「发送到 Language Reactor」时，把该条音轨的地址和字幕交给该网站（与你手动粘贴链接效果相同）。</li>
+</ul>
+<p>除此之外不会向任何域名发起请求。</p>
+
+<h2>5. 权限说明</h2>
+<p>扩展请求的权限只用于访问上述服务器和页面（例如读取书库页面、在页面里注入按钮）。不读取与 Audiobookshelf 无关的网页内容。</p>
+
+<h2>6. 儿童隐私</h2>
+<p>扩展不面向 13 岁以下儿童，也不收集任何年龄信息。</p>
+
+<h2>7. 变更</h2>
+<p>本政策更新会提交在本仓库，页面顶部保留更新日期。</p>
+
+<h2>8. 联系方式</h2>
+<p>问题、数据删除请求：<a href="https://github.com/wzs2004/mossdock-homelab/issues">github.com/wzs2004/mossdock-homelab/issues</a></p>
+
+<footer>© 2026 wzs2004 · <a href="./index.html">安装页</a> · <a href="./terms.html">服务条款</a></footer>
+</div></body></html>
