@@ -228,19 +228,14 @@ async function saveConfig(values) {
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // 三块共用同一个 onMessage 广播通道，只处理本块的 action，其余块各自响应
-    if (message?.action !== 'openDashboard' && !API[message?.action]) return;
+    if (!API[message?.action]) return;
     (async () => {
       const config = await readConfig();
       if (!config.absUrl || !config.managerUrl) throw new Error('请先打开扩展设置，填写服务器地址');
-      const dashboard = sender.id === chrome.runtime.id && sender.url === chrome.runtime.getURL('dashboard.html');
       let source;
       try { source = new URL(sender.url); } catch { throw new Error('无效请求来源'); }
-      if (!dashboard && (!sender.tab || source.origin !== new URL(config.absUrl).origin)) {
+      if (!sender.tab || source.origin !== new URL(config.absUrl).origin) {
         throw new Error('仅允许配置的 Audiobookshelf 页面操作');
-      }
-      if (message?.action === 'openDashboard') {
-        await chrome.tabs.create({url: chrome.runtime.getURL('dashboard.html')});
-        return {ok: true};
       }
       const spec = API[message?.action];
       if (!spec) throw new Error('无效操作');

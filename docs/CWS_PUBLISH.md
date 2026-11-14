@@ -128,3 +128,31 @@ git add -A && git commit -m "book-matching: 修 xxx" && git push
 - `scripts/cws-items.json` — publisherId + 已登记条目（当前只有 `toolkit`）
 - `scripts/package_extensions.py` — 打包（`VERSIONS` 是版本号来源）
 - `.github/workflows/cws-publish.yml` — 流水线
+
+## 权限审计（改 manifest 前必读）
+
+商店审核会**逐条核对权限是否真的在用**，1.0.0 就是被 `tabs` 这一条拒的（`chrome.tabs.create` 不需要 `tabs` 权限）。
+目前 `extensions/toolkit` 只用两个权限，加任何新权限前先自问三句：
+
+| 权限 | 用途（可写进商店「权限理由」） |
+|---|---|
+| `storage` | 存服务器地址与四个密钥，本机 + 同步到用户自己的 Chrome 账号 |
+| `scripting` | 在用户已打开的 Audiobookshelf 页面动态注入面板按钮 |
+
+不用权限也能做的事，别再申请：
+- `chrome.tabs.create` → **不需要** `tabs`
+- 打开自己的 options 页 → `chrome.runtime.openOptionsPage()` 不需要额外权限
+- 往自己声明的 `content_scripts.matches` 页面注入 → 不需要 `scripting`
+
+自查命令：
+
+```bash
+cd extensions/toolkit
+python3 - <<'EOF'
+import json; m=json.load(open('manifest.json'))
+print('permissions:', m['permissions'])
+print('host:', m['host_permissions'])
+print('content:', [c['matches'] for c in m.get('content_scripts',[])])
+EOF
+grep -n "chrome.tabs\.\|eval(\|new Function" *.js
+```

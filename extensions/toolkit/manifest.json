@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Audiobookshelf 工具箱",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "转写管理、书籍元数据匹配、Language Reactor 桥接、The Economist 音频下载，四合一",
   "permissions": [
     "storage",

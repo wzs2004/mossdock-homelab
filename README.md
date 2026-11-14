@@ -38,7 +38,7 @@ DNS、证书、隧道、扩展的后续步骤见 [docs/DOMAIN_CHANGE.md](docs/DO
 
 | 扩展 | 作用 | 安装包 |
 |---|---|---|
-| **Audiobookshelf 工具箱** | 四合一：转写管理 + 书籍元数据匹配 + Language Reactor 桥接 + The Economist 音频 | `dist/abs-toolkit-1.1.0.zip` |
+| **Audiobookshelf 工具箱** | 四合一：转写管理 + 书籍元数据匹配 + Language Reactor 桥接 + The Economist 音频 | `dist/abs-toolkit-1.1.1.zip` |
 
 已上架商店（审核中）：<https://chromewebstore.google.com/detail/aeghohpnnacbdopgjbjegcdjkminlkdp>。
 旧的三个独立扩展（`dist/abs-transcription-manager-*` 等）保留在仓库里但不再分发。
