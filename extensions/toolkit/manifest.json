@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Audiobookshelf 工具箱",
+  "version": "1.0.0",
+  "description": "转写管理、书籍元数据匹配、Language Reactor 桥接，三合一",
+  "permissions": [
+    "storage",
+    "scripting",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.languagereactor.com/*"
+      ],
+      "js": [
+        "language-reactor.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "https://books6.mossdock.autos/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_title": "打开设置"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

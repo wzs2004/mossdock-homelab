@@ -75,6 +75,13 @@ for slug, extra in [('book-matching', ('MANAGER_URL', '/__ext/meta')),
     write(ROOT/'extensions'/slug/'config.js',
           f"/* 由 scripts/render.py 生成：改 site.json 后重跑即可 */\n"
           f"var ABS_URL = '{origin}';\nvar {extra[0]} = ABS_URL + '{extra[1]}';\n")
+# 三合一工具箱：一份 config.js 同时给出三个服务地址
+write(ROOT/'extensions'/'toolkit'/'config.js',
+      f"/* 由 scripts/render.py 生成：改 site.json 后重跑即可 */\n"
+      f"var ABS_URL = '{origin}';\n"
+      f"var ASR_URL = ABS_URL + '/__ext/asr';\n"
+      f"var META_URL = ABS_URL + '/__ext/meta';\n"
+      f"var BRIDGE_URL = ABS_URL + '/__ext/lr';\n")
 
 # ---------- LR bridge config.json ----------
 key = ''

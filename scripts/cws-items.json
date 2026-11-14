@@ -1,22 +1,14 @@
 {
-  "_comment": "Chrome Web Store 条目映射。publisherId 是发布者 ID（不是扩展 ID）；items.<slug>.itemId 填开发者后台该条目地址里 /devconsole/ 后面那串（即扩展 ID）。",
+  "_comment": "Chrome Web Store 条目映射。publisherId 是发布者 ID；items.<slug>.itemId 是开发者后台 /devconsole/ 后面那串（即扩展 ID）。目前只发布合并后的 toolkit；原来三个独立扩展保留在 extensions/ 里但不再上架。",
   "publisherId": "397ed331-70b9-4313-8eb4-5ef07d951c90",
   "publishDefaults": {
     "publishType": "DEFAULT_PUBLISH",
     "blockOnWarnings": false
   },
   "items": {
-    "book-matching": {
-      "name": "Audiobookshelf · 当前书籍匹配",
-      "itemId": "nhlcbeoakgjbllldcjllnbpipnceaapb"
-    },
-    "transcription-manager": {
-      "name": "Audiobookshelf · 转写管理",
-      "itemId": "jljeacopakkpckbejnlldpgbkamjfkmg"
-    },
-    "language-reactor": {
-      "name": "Audiobookshelf → Language Reactor",
-      "itemId": "knlpfefeffnokjeojnoddacpjlgpakfj"
+    "toolkit": {
+      "name": "Audiobookshelf 工具箱",
+      "itemId": "aeghohpnnacbdopgjbjegcdjkminlkdp"
     }
   }
 }

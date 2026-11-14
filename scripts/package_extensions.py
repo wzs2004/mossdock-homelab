@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""把 extensions/ 下三个扩展（含转写）打包到 dist/（排除本地密钥），用于 Release 或商店。"""
+"""把 extensions/ 下的扩展（三个独立扩展 + 三合一工具箱）打包到 dist/（排除本地密钥），
+用于 Release 或商店。"""
 import json, pathlib, shutil, zipfile, hashlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-VERSIONS = {'book-matching': '1.6.0', 'language-reactor': '1.5.0',
+VERSIONS = {'toolkit': '1.0.0',
+            'book-matching': '1.6.0', 'language-reactor': '1.5.0',
             'transcription-manager': '1.1.0'}
 EXCLUDE = {'auth.js', 'preset.js', '.DS_Store'}
 OUT = ROOT / 'dist'

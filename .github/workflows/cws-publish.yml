@@ -64,7 +64,13 @@ jobs:
             target="$(git diff --name-only "$before" "${{ github.sha }}" -- extensions/ \
                       | cut -d/ -f2 | sort -u | tr '\n' ' ')"
           fi
-          target="$(echo "$target" | xargs || true)"        # 去空白
+          # 只保留 cws-items.json 里登记过的扩展（其余目录改了也不发商店）
+          known="$(python3 -c "import json;print(' '.join(json.load(open('scripts/cws-items.json'))['items']))")"
+          kept=""
+          for slug in $target; do
+            case " $known " in *" $slug "*) kept="$kept $slug";; esac
+          done
+          target="$(echo "$kept" | xargs || true)"
           echo "target=$target" >> "$GITHUB_OUTPUT"
           if [ -z "$target" ]; then
             echo "没有扩展文件变动，跳过发布"
