@@ -14,6 +14,11 @@
             header_up Host 127.0.0.1
         }
     }
+    handle_path /__ext/asr/* {
+        reverse_proxy transcription-manager:13384 {
+            header_up Host 127.0.0.1
+        }
+    }
     handle_path /__ext/lr/* {
         reverse_proxy abs-lr-bridge:13381
     }

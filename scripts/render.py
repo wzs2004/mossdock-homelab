@@ -23,6 +23,7 @@ def write(path, text):
 vals = {
     'accel_books': P['accel_books'], 'accel_photos': P['accel_photos'],
     'meta_port': P.get('meta', 13382), 'lr_bridge_port': P['lr_bridge'],
+    'manager_port': P.get('manager', 13384),
     'books_domain': D['books'], 'photos_domain': D['photos'], 'dav_domain': D['dav'],
     'cert_fullchain': 'fullchain.cer', 'cert_key': D['dav'].replace('.', '.') + '.key',
     'tunnel_id': site['cloudflare']['tunnel_id'],
@@ -56,6 +57,15 @@ ABS = f"{N['abs']}"
 merge_env(ROOT/'stacks/audiobookshelf/.env', {
     'TZ': S['timezone'], 'ABS_PORT': P['abs'],
     'ABS_DATA': f"{S['data_root']}/Audiobookshelf", 'ABS_NETWORK': ABS})
+merge_env(ROOT/'stacks/transcription-manager/.env', {
+    'TZ': S['timezone'], 'MANAGER_PORT': P.get('manager', 13384),
+    'ABS_DATA': f"{S['data_root']}/Audiobookshelf",
+    'MANAGER_DATA': f"{S['data_root']}/Audiobookshelf/transcription-manager",
+    'MODEL_DIR': f"{S['data_root']}/whisper-models",
+    'ABS_NETWORK': ABS,
+    'WHISPER_MODEL_FILE': 'ggml-large-v3-turbo-q5_0.bin',
+    'WHISPER_LANGUAGE': 'en', 'WHISPER_THREADS': 4,
+    'AUTO_SCAN_SECONDS': 60, 'AUTO_SETTLE_SECONDS': 300})
 # ---------- 扩展 config.js ----------
 origin = f"https://{D['books']}"
 for slug, extra in [('book-matching', ('MANAGER_URL', '/__ext/meta')),

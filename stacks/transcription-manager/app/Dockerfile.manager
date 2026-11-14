@@ -1,0 +1,23 @@
+# 转写管理器镜像。
+#
+# 底座是 local/audiobookshelf-base:1（含 whisper-cli 与 Python 依赖）。
+# 底座的可复现构建配方见 Dockerfile.base；当前网络（GitHub 不可达、
+# 无 python/debian 基础镜像）无法从零重建，因此这里直接复用已构建好的底座。
+FROM local/audiobookshelf-base:1
+
+USER worker
+
+# 只复制运行所需的模块。分章功能（chapter_worker / spoken_chapters）已彻底移除。
+COPY --chown=worker:worker \
+    asr_quality.py \
+    transcription_manager.py \
+    book_tools.py \
+    srt_order.py \
+    abs_api.py \
+    library_automation.py \
+    media_sync.py \
+    /app/
+
+ENV DATA_DIR=/data PORT=13384
+
+CMD ["python", "-u", "/app/transcription_manager.py"]

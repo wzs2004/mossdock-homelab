@@ -1,0 +1,43 @@
+name: abs-transcription
+services:
+  transcription-manager:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.manager
+    image: local/audiobookshelf-transcription-manager:1
+    container_name: transcription-manager
+    restart: unless-stopped
+    init: true
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DATA_DIR: /data
+      PORT: '13384'
+      ABS_BASE_URL: http://audiobookshelf:80
+      ABS_API_TOKEN: ${ABS_API_TOKEN:?set ABS_API_TOKEN}
+      EXTENSION_TOKEN: ${EXTENSION_TOKEN:?set EXTENSION_TOKEN}
+      WHISPER_MODEL: /models/${WHISPER_MODEL_FILE:-ggml-large-v3-turbo-q5_0.bin}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-en}
+      WHISPER_THREADS: ${WHISPER_THREADS:-4}
+      CHUNK_SECONDS: 120
+      NATIVE_ASR_URL: ${NATIVE_ASR_URL:-}
+      NATIVE_ASR_KEY: ${NATIVE_ASR_KEY:-}
+      AUTO_MATCH: ${AUTO_MATCH:-1}
+      AUTO_TRANSCRIBE: ${AUTO_TRANSCRIBE:-0}
+      AUTO_SETTLE_SECONDS: ${AUTO_SETTLE_SECONDS:-300}
+      AUTO_SCAN_SECONDS: ${AUTO_SCAN_SECONDS:-60}
+      REGROUP_MAX_CHARS: ${REGROUP_MAX_CHARS:-220}
+      REGROUP_MAX_SECONDS: ${REGROUP_MAX_SECONDS:-18}
+    ports:
+      # 只绑定回环，公网入口由 edge 的 /__ext/asr 反代提供
+      - '127.0.0.1:${MANAGER_PORT:-13384}:13384'
+    volumes:
+      - ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks:/audiobooks
+      - ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks115:/audiobooks115
+      - ${MODEL_DIR:-/Volumes/NAS/Apps/whisper-models}:/models:ro
+      - ${MANAGER_DATA:-/Volumes/NAS/Apps/Audiobookshelf/transcription-manager}:/data
+      - ${MANAGER_DATA:-/Volumes/NAS/Apps/Audiobookshelf/transcription-manager}/data/transcripts:/transcripts:ro
+    networks: [abs]
+networks:
+  abs:
+    external: true
+    name: ${ABS_NETWORK:-mossdock-abs}

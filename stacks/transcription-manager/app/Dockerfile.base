@@ -1,0 +1,22 @@
+FROM debian:bookworm-slim AS whisper-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates git cmake make g++ && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch v1.9.5 https://github.com/ggml-org/whisper.cpp.git /src/whisper.cpp \
+    && cmake -S /src/whisper.cpp -B /src/whisper.cpp/build \
+       -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+       -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON \
+       -DGGML_NATIVE=OFF \
+    && cmake --build /src/whisper.cpp/build --target whisper-cli -j 4
+
+# 说明：本文件可在能访问 GitHub + Docker Hub 的环境里从零重建底座。
+# 当前机器无法直连 GitHub，故实际使用 local/audiobookshelf-base:1 快照。
+FROM python:3.12-slim-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg libgomp1 ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=whisper-builder /src/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
+WORKDIR /app
+RUN useradd --uid 10001 --create-home worker \
+    && mkdir -p /data && chown worker:worker /data
+USER worker
+ENV PYTHONUNBUFFERED=1
