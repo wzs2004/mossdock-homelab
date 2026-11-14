@@ -10,13 +10,14 @@
   const box=node('section'), heading=node('strong','书籍元数据匹配');
   const toggle=node('button','元数据匹配');toggle.id='match-toggle';toggle.hidden=true;box.hidden=true;
   const close=node('button','关闭');close.style.float='right';close.onclick=()=>{visible=false;box.hidden=true;};
-  const providerLabel=node('label'), provider=node('select');providerLabel.append(node('span','匹配来源'),provider);
+  const providerLabel=node('label'), provider=node('select');providerLabel.append(node('span','元数据来源'),provider);
+  const chapterLabel=node('label'), chapterSource=node('select');chapterLabel.append(node('span','章节来源'),chapterSource);
   const titleLabel=node('label'),title=node('input');title.placeholder='留空使用当前书名';title.maxLength=300;titleLabel.append(node('span','搜索书名'),title);
   const authorLabel=node('label'),author=node('input');author.placeholder='留空使用当前作者';author.maxLength=300;authorLabel.append(node('span','搜索作者（可选）'),author);
   const actions=node('div','','actions'),start=node('button','搜索候选书籍'),reload=node('button','刷新匹配源');actions.append(start,reload);
   const chaptersLabel=node('label',''),chaptersBox=node('input');chaptersBox.type='checkbox';chaptersBox.checked=true;chaptersBox.id='useChapters';chaptersLabel.append(chaptersBox,node('span',' 同时用来源的章节时间轴替换现有章节'));
   const status=node('p','选择匹配来源后搜索'),progress=node('progress'),err=node('p','','error');progress.max=100;
-  const matches=node('div');box.append(close,heading,providerLabel,titleLabel,authorLabel,actions,chaptersLabel,status,progress,err,matches);dom.append(toggle,box);
+  const matches=node('div');box.append(close,heading,providerLabel,chapterLabel,titleLabel,authorLabel,actions,chaptersLabel,status,progress,err,matches);dom.append(toggle,box);
   let id='',busy=false,searching=false,applying=false,loadingProviders=false,generation=0,visible=false;
   toggle.onclick=()=>{visible=!visible;box.hidden=!visible||!id;};
   async function api(action,value={}) {const r=await chrome.runtime.sendMessage({action,value});if(r?.error)throw Error(r.error);return r;}
@@ -36,6 +37,14 @@
     }
     updateBusy();
   }
+  function populateChapters(list){
+    chapterSource.replaceChildren();
+    for(const source of list||[]){
+      if(typeof source.value!=='string')continue;
+      const option=node('option',source.text||source.value);option.value=source.value;chapterSource.append(option);
+    }
+    if(!chapterSource.options.length){const o=node('option','不替换章节');o.value='none';chapterSource.append(o);}
+  }
   function populateProviders(list){
     if(!Array.isArray(list)||!list.length)throw Error('服务端未返回可用的匹配来源');
     const previous=provider.value||'audible';provider.replaceChildren();
@@ -50,11 +59,25 @@
   }
   async function loadProviders(){
     loadingProviders=true;err.textContent='';updateBusy();
-    try{const result=await api('matchProviders');populateProviders(result.providers);}
+    try{const result=await api('matchProviders');populateProviders(result.providers);populateChapters(result.chapterProviders);}
     catch(e){provider.replaceChildren();err.textContent='获取匹配来源失败，请点击“刷新匹配源”：'+e.message;}
     finally{loadingProviders=false;updateBusy();}
   }
   reload.onclick=loadProviders;
+  function renderResult(response){
+    progress.value=response.progress||100;applying=false;
+    const ok=response.status==='done', partial=response.status==='partial';
+    status.textContent=(ok?'✅ ':partial?'⚠ ':'❌ ')+(response.stage||(ok?'已完成':'失败'));
+    clearMatches();
+    for(const st of response.steps||[]){
+      const icon={ok:'✅',warn:'⚠️',fail:'❌',skip:'⏭️'}[st.status]||'•';
+      const row=node('p',`${icon} ${st.name}${st.detail?'：'+st.detail:''}`,st.status==='fail'?'error':'');
+      matches.append(row);
+    }
+    if(response.error)err.textContent=response.error;
+    if(ok||partial)matches.append(node('p','提示：刷新页面后即可看到新的元数据和章节。','muted'));
+    updateBusy();
+  }
   function displayMatches(result,target,searchGeneration){
     clearMatches();
     const list=result.results||[];
@@ -68,6 +91,12 @@
       const series=(candidate.series||[]).map(s=>s.series?`${s.series}${s.sequence?' #'+s.sequence:''}`:'').filter(Boolean).join('、');
       const details=[authors,year,candidate.publisher,narrator?('旁白 '+narrator):'',series?('系列 '+series):'',Number.isFinite(candidate.chapterCount)?(candidate.chapterCount+' 章'):''].filter(Boolean).map(String).join(' · ');
       row.append(name,node('p',details,'muted'));
+      if(Number.isFinite(candidate.durationMinutes)){
+        const cur=Number.isFinite(result.currentDuration)?result.currentDuration:null;
+        const diff=Number.isFinite(candidate.durationDiffPct)?candidate.durationDiffPct:null;
+        const warn=diff!==null&&diff>3;
+        row.append(node('p',`来源时长 ${candidate.durationMinutes} 分钟`+(cur!==null?` · 当前音频 ${cur} 分钟`:'')+(diff!==null?` · 差 ${diff}%`:'')+(warn?' ⚠ 可能不是同一版本':''),warn?'error':'muted'));
+      }
       if(candidate.subtitle)row.append(node('p',candidate.subtitle,'muted'));
       if(candidate.description)row.append(node('p',String(candidate.description).replace(/<[^>]*>/g,'').slice(0,400),'candidate'));
       const choose=node('button','选择此结果并应用');
@@ -76,11 +105,12 @@
         const chText=Number.isFinite(candidate.chapterCount)&&chaptersBox.checked?`，并用它替换章节（${candidate.chapterCount} 章）`:'';
         if(!confirm(`将“${candidate.title}”的信息应用到当前书籍${chText}？\n将用来源数据覆盖作者、系列、年份、简介等字段，并替换章节。`))return;
         if(target!==id||searchGeneration!==generation||applying)return;
-        applying=true;err.textContent='';updateBusy();
+        applying=true;err.textContent='';progress.value=15;status.textContent='正在应用…';updateBusy();
         try{
-          const response=await api('matchBook',{item_id:target,token:result.token,index:candidate.index,chapters:!!chaptersBox.checked,provider:result.provider});
-          if(target===id&&searchGeneration===generation)showProgress(response);
-        }catch(e){if(target===id&&searchGeneration===generation){err.textContent=e.message;applying=false;updateBusy();}}
+          const response=await api('matchBook',{item_id:target,token:result.token,index:candidate.index,
+            chapters:!!chaptersBox.checked, chapter_provider:chaptersBox.checked?chapterSource.value:'none', provider:result.provider});
+          if(target===id&&searchGeneration===generation)renderResult(response);
+        }catch(e){if(target===id&&searchGeneration===generation){err.textContent=e.message;applying=false;progress.value=0;updateBusy();}}
       };
       row.append(choose);matches.append(row);
     }

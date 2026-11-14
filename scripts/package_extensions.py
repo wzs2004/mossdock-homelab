@@ -3,7 +3,7 @@
 import json, pathlib, shutil, zipfile, hashlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-VERSIONS = {'book-matching': '1.5.0', 'language-reactor': '1.4.1'}
+VERSIONS = {'book-matching': '1.6.0', 'language-reactor': '1.4.1'}
 EXCLUDE = {'auth.js', 'preset.js', '.DS_Store'}
 OUT = ROOT / 'dist'
 if OUT.exists(): shutil.rmtree(OUT)
