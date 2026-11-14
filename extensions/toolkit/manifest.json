@@ -5,8 +5,7 @@
   "description": "转写管理、书籍元数据匹配、Language Reactor 桥接、The Economist 音频下载，四合一",
   "permissions": [
     "storage",
-    "scripting",
-    "tabs"
+    "scripting"
   ],
   "background": {
     "service_worker": "background.js"
