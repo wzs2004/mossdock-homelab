@@ -3,8 +3,10 @@
    未填写的密钥不会写入，保持浏览器里的原值。 */
 const status = document.querySelector('#status');
 const absUrlInput = document.querySelector('#absUrl');
-const KEY_INPUTS = ['asrKey', 'metaKey', 'bridgeKey'];
-const SERVICE_SUFFIXES = {asrUrl: '/__ext/asr', metaUrl: '/__ext/meta', bridgeUrl: '/__ext/lr'};
+const KEY_INPUTS = ['asrKey', 'metaKey', 'bridgeKey', 'econKey'];
+const SERVICE_SUFFIXES = {asrUrl: '/__ext/asr', metaUrl: '/__ext/meta', bridgeUrl: '/__ext/lr', econUrl: '/__ext/econ'};
+const SYNCED_KEYS = ['absUrl', 'asrUrl', 'metaUrl', 'bridgeUrl', 'econUrl',
+                     'asrKey', 'metaKey', 'bridgeKey', 'econKey', 'customDomain'];
 
 function setStatus(text, isError = false) {
   status.textContent = text;
@@ -36,11 +38,37 @@ function showPreview(origin) {
   document.querySelector('#asrUrlPreview').textContent = urls.asrUrl;
   document.querySelector('#metaUrlPreview').textContent = urls.metaUrl;
   document.querySelector('#bridgeUrlPreview').textContent = urls.bridgeUrl;
+  document.querySelector('#econUrlPreview').textContent = urls.econUrl;
 }
 
-chrome.storage.local.get([
-  'absUrl', ...KEY_INPUTS, 'customDomain'
-]).then(config => {
+/* 本地缺失的配置从 chrome.storage.sync 补回来（重装/换电脑不用重填） */
+async function loadAll() {
+  const keys = ['absUrl', ...KEY_INPUTS, 'customDomain'];
+  const local = await chrome.storage.local.get(keys);
+  const missing = keys.filter(key => local[key] === undefined || local[key] === '');
+  if (missing.length) {
+    try {
+      const synced = await chrome.storage.sync.get(missing);
+      const patch = {};
+      for (const key of missing) {
+        if (synced[key] !== undefined && synced[key] !== '') { local[key] = synced[key]; patch[key] = synced[key]; }
+      }
+      if (Object.keys(patch).length) await chrome.storage.local.set(patch);
+    } catch (_) { /* 未登录 Chrome 时忽略 */ }
+  }
+  return local;
+}
+
+async function saveAll(values) {
+  await chrome.storage.local.set(values);
+  const syncable = {};
+  for (const [key, value] of Object.entries(values)) if (SYNCED_KEYS.includes(key)) syncable[key] = value;
+  if (Object.keys(syncable).length) {
+    try { await chrome.storage.sync.set(syncable); } catch (_) { /* 配额 */ }
+  }
+}
+
+loadAll().then(config => {
   let origin = ABS_URL;
   try {
     origin = normalizedOrigin(config.absUrl || ABS_URL);
@@ -88,7 +116,7 @@ document.querySelector('#settings').addEventListener('submit', async event => {
       update[key] = value;
       written.push(key);
     }
-    await chrome.storage.local.set(update);
+    await saveAll(update);
     absUrlInput.value = absUrl;
     showPreview(absUrl);
     const keys = written.length ? `已更新 ${written.length} 个密钥` : '密钥未变（留空保持原值）';
@@ -102,24 +130,30 @@ document.querySelector('#settings').addEventListener('submit', async event => {
 });
 
 document.querySelector('#resetDefaults').addEventListener('click', async () => {
-  await chrome.storage.local.set({
+  await saveAll({
     absUrl: ABS_URL,
     asrUrl: ASR_URL,
     metaUrl: META_URL,
     bridgeUrl: BRIDGE_URL,
+    econUrl: (typeof ECON_URL !== 'undefined') ? ECON_URL : ABS_URL + '/__ext/econ',
     customDomain: false
   });
   setStatus('已恢复仓库内置地址，正在重新加载…');
   location.reload();
 });
 
-document.querySelector('#openAbs').addEventListener('click', () => {
-  let url = ABS_URL;
+document.querySelector('#openAbs').addEventListener('click', async () => {
+  // 用户改过地址就用改过的：先看输入框（可能还没保存），再退回已保存的配置
+  let url = '';
   try {
     url = normalizedOrigin(absUrlInput.value);
-  } catch (_) { /* 输入不合法时退回内置地址 */ }
+  } catch (_) { url = ''; }
+  if (!url) {
+    const config = await chrome.storage.local.get(['absUrl']);
+    try { url = normalizedOrigin(config.absUrl || ABS_URL); } catch (_) { url = ABS_URL; }
+  }
   try {
-    chrome.tabs.create({url});
+    await chrome.tabs.create({url});
   } catch (error) {
     setStatus(error.message, true);
   }

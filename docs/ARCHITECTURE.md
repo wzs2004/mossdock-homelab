@@ -17,6 +17,7 @@
 | Audiobookshelf | audiobookshelf | 127.0.0.1:13378 | 80 | mossdock-abs |
 | 元数据匹配 | meta-bridge | 127.0.0.1:13382 | 13382 | mossdock-abs |
 | LR 桥接 | abs-lr-bridge | 127.0.0.1:13381 | 13381 | abs + lr |
+| 经济学人下载 | `econaudio` | 经 Caddy `/__ext/econ` | 只写书库目录（无独立数据） |
 | Immich server | immich_server | 127.0.0.1:12283 | 2283 | mossdock-immich |
 | Immich 网关 | immich_gate | 0.0.0.0:2283 | 2283 | immich |
 | Immich ML / Redis / PG | immich_* | — | — | immich |

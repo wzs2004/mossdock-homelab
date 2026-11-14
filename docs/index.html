@@ -36,6 +36,7 @@ a{color:#7fd0f0}
   <div class="card"><h3>① 转写管理</h3><p>书库首页看转写队列（排队 / 进行中 / 完成 / 失败），进书一键开始或重试，实时看进度和报错，完成后直接搜 SRT。</p></div>
   <div class="card"><h3>② 书籍元数据匹配</h3><p>在书籍页列出全部候选来源，对比标题/作者/封面/简介，挑一个一键套用，也可以只改其中几项。</p></div>
   <div class="card"><h3>③ Language Reactor 桥接</h3><p>把单条音轨连同已有 SRT 字幕送进 Language Reactor；隧道卡住会给超时提示和「重试」。</p></div>
+  <div class="card"><h3>④ The Economist 音频</h3><p>在 econaudio 网站右下角出现面板，选一期 → 家里的服务器自动下载整期（含封面、ID3 标签、metadata.json）并import进书架。</p></div>
 </div>
 
 <h2>安装方式一：Chrome 应用商店（推荐）</h2>
@@ -57,7 +58,9 @@ a{color:#7fd0f0}
 • 转写服务密钥 <code>X-ASR-Extension-Token</code>（<code>stacks/transcription-manager/.env</code>）<br>
 • 元数据服务密钥 <code>X-Meta-Token</code>（<code>stacks/meta-bridge/.env</code>）<br>
 • 桥接服务密钥 <code>X-LR-Bridge-Key</code>（<code>stacks/lr-bridge/.env</code>）<br>
-服务器地址只需填一个域名，三个服务路径自动推导（<code>/__ext/asr</code>、<code>/__ext/meta</code>、<code>/__ext/lr</code>）。
+• 经济学人下载密钥 <code>X-Econ-Token</code>（<code>stacks/econaudio/.env</code>）<br>
+服务器地址只需填一个域名，四个服务路径自动推导（<code>/__ext/asr</code>、<code>/__ext/meta</code>、<code>/__ext/lr</code>、<code>/__ext/econ</code>）。
+  密钥会同时存进 <code>chrome.storage.sync</code>，重装扩展或换电脑登录同一 Chrome 账号后自动恢复，不用重填。
 </div>
 
 <div class="warn">

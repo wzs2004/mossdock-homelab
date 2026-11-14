@@ -17,5 +17,8 @@ photos6.mossdock.autos {
 
 books6.mossdock.autos {
     tls /certs/fullchain.cer /certs/dav6.mossdock.autos.key
+    handle_path /__ext/econ/* {
+        reverse_proxy econaudio:13387
+    }
     reverse_proxy mossdock-accelerator:8081
 }

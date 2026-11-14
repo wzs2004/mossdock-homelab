@@ -12,7 +12,7 @@ if ! curl -fL --retry 2 -o "$TMP/repo.zip" "https://codeload.github.com/$REPO/zi
 fi
 unzip -q "$TMP/repo.zip" -d "$TMP/src"
 
-# 只装三合一的 toolbox，旧的三个独立扩展不再分发
+# 只装三合一的 toolkit，旧的三个独立扩展不再分发
 ZIPS=$(find "$TMP/src" -path '*/dist/abs-toolkit-*.zip' -maxdepth 5 | sort | tail -1)
 [ -z "$ZIPS" ] && { echo "包内未找到 dist/abs-toolkit-*.zip"; exit 1; }
 while IFS= read -r z; do
@@ -34,7 +34,7 @@ tell application "System Events"
 1) 在 chrome://extensions 右上角打开「开发者模式」
 2) 点「加载已解压的扩展程序」，选 Downloads/AudiobookshelfPlugins/toolkit
 
-装好后点扩展图标，填服务器地址和三个密钥（转写 / 元数据 / 桥接）。" buttons {"知道了"} default button 1 with title "Audiobookshelf 工具箱安装"
+装好后点扩展图标，填服务器地址和四个密钥（转写 / 元数据 / 桥接 / 经济学人）。" buttons {"知道了"} default button 1 with title "Audiobookshelf 工具箱安装"
 end tell
 APPLESCRIPT
 echo; echo "完成：$DEST"

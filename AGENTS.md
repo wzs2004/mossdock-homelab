@@ -31,6 +31,7 @@
 | 元数据匹配 | `meta-bridge` | 经 Caddy `/__ext/meta` | 无持久数据（备份在 `/Audiobookshelf/meta-backups`） |
 | 转写管理 | `transcription-manager` | `127.0.0.1:13384`，经 Caddy `/__ext/asr` | `/Volumes/NAS/Apps/Audiobookshelf/transcription-manager` |
 | LR 桥接 | `abs-lr-bridge` | 经 Caddy `/__ext/lr` | 只读挂载书库 |
+| 经济学人下载 | `econaudio` | 经 Caddy `/__ext/econ` | 写书库目录（The Economist - Weekly Editions） |
 | Immich | `immich_*` + `immich_gate` | `:2283`，公网 `{{photos}}` | `/Volumes/NAS/Apps/Immich` |
 | 边缘 Caddy | `mossdock-accelerator` | 内部 8081/8082 | 无 |
 | Cloudflare Tunnel | `mossdock-tunnel` | `books/photos/dav.mossdock.autos` | 凭证文件 |

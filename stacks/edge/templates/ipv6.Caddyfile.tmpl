@@ -17,5 +17,8 @@
 
 {{books_domain}} {
     tls /certs/{{cert_fullchain}} /certs/{{cert_key}}
+    handle_path /__ext/econ/* {
+        reverse_proxy econaudio:{{econ_port}}
+    }
     reverse_proxy mossdock-accelerator:{{accel_books}}
 }

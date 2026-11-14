@@ -23,6 +23,7 @@ def write(path, text):
 vals = {
     'accel_books': P['accel_books'], 'accel_photos': P['accel_photos'],
     'meta_port': P.get('meta', 13382), 'lr_bridge_port': P['lr_bridge'],
+    'econ_port': P.get('econ', 13387),
     'manager_port': P.get('manager', 13384),
     'books_domain': D['books'], 'photos_domain': D['photos'], 'dav_domain': D['dav'],
     'cert_fullchain': 'fullchain.cer', 'cert_key': D['dav'].replace('.', '.') + '.key',
@@ -67,6 +68,24 @@ merge_env(ROOT/'stacks/transcription-manager/.env', {
     'WHISPER_LANGUAGE': 'en', 'WHISPER_THREADS': 4,
     'AUTO_SCAN_SECONDS': 60, 'AUTO_SETTLE_SECONDS': 300,
     'NATIVE_ASR_URL': 'http://host.docker.internal:13385'})
+# econaudio：书库要可写（下载直接写挂载目录），因此没有 :ro
+ECON_ENV = ROOT/'stacks/econaudio/.env'
+econ_values = {'TZ': S['timezone'], 'ECON_PORT': P.get('econ', 13387),
+               'ABS_DATA': f"{S['data_root']}/Audiobookshelf", 'ABS_NETWORK': ABS}
+econ_current = {}
+if ECON_ENV.exists():
+    for line in ECON_ENV.read_text().splitlines():
+        if '=' in line and not line.strip().startswith('#'):
+            k, v = line.split('=', 1)
+            econ_current[k.strip()] = v
+# ECON_TOKEN 由人填（merge_env 会保留）；ABS token 没填过就从 lr-bridge 复制一份
+if 'ABS_API_TOKEN' not in econ_current:
+    lr_env = ROOT/'stacks/lr-bridge/.env'
+    if lr_env.exists():
+        for line in lr_env.read_text().splitlines():
+            if line.startswith('ABS_API_TOKEN='):
+                econ_values['ABS_API_TOKEN'] = line.split('=', 1)[1]
+merge_env(ECON_ENV, econ_values)
 # ---------- 扩展 config.js ----------
 origin = f"https://{D['books']}"
 for slug, extra in [('book-matching', ('MANAGER_URL', '/__ext/meta')),
@@ -81,7 +100,8 @@ write(ROOT/'extensions'/'toolkit'/'config.js',
       f"var ABS_URL = '{origin}';\n"
       f"var ASR_URL = ABS_URL + '/__ext/asr';\n"
       f"var META_URL = ABS_URL + '/__ext/meta';\n"
-      f"var BRIDGE_URL = ABS_URL + '/__ext/lr';\n")
+      f"var BRIDGE_URL = ABS_URL + '/__ext/lr';\n"
+      f"var ECON_URL = ABS_URL + '/__ext/econ';\n")
 
 # ---------- LR bridge config.json ----------
 key = ''

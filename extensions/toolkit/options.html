@@ -26,7 +26,7 @@ footer{margin-top:22px;font-size:12.5px;color:#8fb0c4;line-height:1.7}
 </head>
 <body>
 <h1>Audiobookshelf 工具箱</h1>
-<p>转写管理、书籍元数据匹配、Language Reactor 桥接，三合一。密钥只保存在本浏览器，不会写进仓库或上传。</p>
+<p>转写管理、书籍元数据匹配、Language Reactor 桥接、The Economist 音频下载，四合一。密钥只保存在本浏览器（并同步到你的 Chrome 账号），不会写进仓库或上传。</p>
 <form id="settings">
   <fieldset>
     <legend>共用服务器地址</legend>
@@ -36,9 +36,10 @@ footer{margin-top:22px;font-size:12.5px;color:#8fb0c4;line-height:1.7}
     <div class="derived">
       转写服务 <code id="asrUrlPreview">—</code><br>
       元数据服务 <code id="metaUrlPreview">—</code><br>
-      桥接服务 <code id="bridgeUrlPreview">—</code>
+      桥接服务 <code id="bridgeUrlPreview">—</code><br>
+      经济学人服务 <code id="econUrlPreview">—</code>
     </div>
-    <p class="hint">三个服务地址都从上面的域名自动推导（<code>/__ext/asr</code>、<code>/__ext/meta</code>、<code>/__ext/lr</code>），通常只需要填这一项。</p>
+    <p class="hint">四个服务地址都从上面的域名自动推导（<code>/__ext/asr</code>、<code>/__ext/meta</code>、<code>/__ext/lr</code>、<code>/__ext/econ</code>），通常只需要填这一项。</p>
   </fieldset>
 
   <fieldset>
@@ -62,6 +63,13 @@ footer{margin-top:22px;font-size:12.5px;color:#8fb0c4;line-height:1.7}
     <p class="hint">服务端 <code>abs-lr-bridge</code> 的 <code>X-LR-Bridge-Key</code>。用于把音轨和 SRT 字幕送进 Language Reactor。</p>
   </fieldset>
 
+  <fieldset>
+    <legend>经济学人音频</legend>
+    <label for="econKey">下载服务密钥</label>
+    <input id="econKey" type="password" autocomplete="off" spellcheck="false" placeholder="留空则保持原密钥">
+    <p class="hint">服务端 <code>stacks/econaudio</code> 的 <code>X-Econ-Token</code>。装上后在 econaudio 网站右下角会出现面板，选一期即可让服务器下载进书架。</p>
+  </fieldset>
+
   <div class="buttons">
     <button type="submit">保存并授权连接</button>
     <button type="button" id="resetDefaults" class="secondary">恢复默认地址</button>
@@ -71,7 +79,9 @@ footer{margin-top:22px;font-size:12.5px;color:#8fb0c4;line-height:1.7}
 </form>
 
 <footer>
-  密钥与地址保存在扩展的本地存储里。手动填写的地址会以 <code>customDomain=true</code> 记住，
+  密钥与地址会同时存进 <code>chrome.storage.local</code> 和 <code>chrome.storage.sync</code>：
+  重装扩展或换电脑（登录同一个 Chrome 账号）后会自动恢复，不用重新输入。
+  手动填写的地址会以 <code>customDomain=true</code> 记住，
   只有点击“恢复默认地址”才会回到仓库内置的 <code>config.js</code> 地址。
 </footer>
 <script src="config.js"></script>

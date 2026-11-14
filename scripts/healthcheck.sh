@@ -11,6 +11,7 @@ checks = [
     ('meta-bridge', f"http://127.0.0.1:{p.get('meta',13382)}/api/health", 5),
     ('transcription', f"http://127.0.0.1:{p['manager']}/api/health", 15),
     ('lr-bridge', f"http://127.0.0.1:{p['lr_bridge']}/", 5),
+    ('econ-audio', f"http://127.0.0.1:{p.get('econ',13387)}/api/health", 5),
     ('immich-gate', f"http://127.0.0.1:{p['immich_public']}/", 40),
 ]
 for name, url, timeout in checks:
@@ -23,4 +24,4 @@ for name, url, timeout in checks:
         print(f'FAIL {name:24} {e} {url}')
 PY
 echo '--- containers ---'
-docker ps --format '{{.Names}}\t{{.Status}}' | sort | grep -E 'audiobookshelf|immich|mossdock|abs-lr' || true
+docker ps --format '{{.Names}}\t{{.Status}}' | sort | grep -E 'audiobookshelf|immich|mossdock|abs-lr|econaudio' || true

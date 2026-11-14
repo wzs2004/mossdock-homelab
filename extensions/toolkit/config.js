@@ -3,3 +3,4 @@ var ABS_URL = 'https://books6.mossdock.autos';
 var ASR_URL = ABS_URL + '/__ext/asr';
 var META_URL = ABS_URL + '/__ext/meta';
 var BRIDGE_URL = ABS_URL + '/__ext/lr';
+var ECON_URL = ABS_URL + '/__ext/econ';

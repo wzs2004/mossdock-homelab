@@ -16,6 +16,38 @@ function openOptionsPageOnce() {
   return chrome.runtime.openOptionsPage();
 }
 
+
+/* ===== 配置读写：本地 + chrome.storage.sync =====
+   storage.local 在卸载重装后会清空；storage.sync 跟着 Google 账号走，
+   所以密钥同时写两份，读取时本地缺失就用 sync 补回来，重装/换电脑都不用再填。 */
+const SYNCED_KEYS = ['absUrl', 'asrUrl', 'metaUrl', 'bridgeUrl', 'econUrl',
+                     'asrKey', 'metaKey', 'bridgeKey', 'econKey', 'customDomain'];
+
+async function loadConfig(keys) {
+  const local = await chrome.storage.local.get(keys);
+  const missing = keys.filter(k => local[k] === undefined || local[k] === '');
+  if (missing.length) {
+    try {
+      const synced = await chrome.storage.sync.get(missing);
+      const patch = {};
+      for (const k of missing) {
+        if (synced[k] !== undefined && synced[k] !== '') { local[k] = synced[k]; patch[k] = synced[k]; }
+      }
+      if (Object.keys(patch).length) await chrome.storage.local.set(patch);
+    } catch (_) { /* 没登录或 sync 不可用时忽略 */ }
+  }
+  return local;
+}
+
+async function saveConfig(values) {
+  await chrome.storage.local.set(values);
+  const syncable = {};
+  for (const [k, v] of Object.entries(values)) if (SYNCED_KEYS.includes(k)) syncable[k] = v;
+  if (Object.keys(syncable).length) {
+    try { await chrome.storage.sync.set(syncable); } catch (_) { /* 配额或未登录 */ }
+  }
+}
+
 /* ========== 1/3 转写管理（原 extensions/transcription-manager） ========== */
 (function () {
   /* 转写管理扩展 —— 只做三件事：看队列、按书开始转写、跟随书库变化。
@@ -37,7 +69,7 @@ function openOptionsPageOnce() {
 
   async function readConfig() {
     // 存储键隔离：asrUrl/asrKey → 原来的 managerUrl/managerKey 字段名
-    const stored = await chrome.storage.local.get(['absUrl', 'asrUrl', 'asrKey', 'customDomain']);
+    const stored = await loadConfig(['absUrl', 'asrUrl', 'asrKey', 'customDomain']);
     return {absUrl: stored.absUrl, managerUrl: stored.asrUrl, managerKey: stored.asrKey,
             customDomain: stored.customDomain};
   }
@@ -67,7 +99,7 @@ function openOptionsPageOnce() {
       if (existing.absUrl !== ABS_URL) changes.absUrl = ABS_URL;
       if (existing.managerUrl !== ASR_URL) changes.asrUrl = ASR_URL;
     }
-    if (Object.keys(changes).length) await chrome.storage.local.set(changes);
+    if (Object.keys(changes).length) await saveConfig(changes);
     const config = {...existing, ...changes};
     queueRegistration();
     if (!openSettings) return;
@@ -138,7 +170,7 @@ function openOptionsPageOnce() {
 
   async function readConfig() {
     // 存储键隔离：metaUrl/metaKey → 原来的 managerUrl/managerKey 字段名
-    const stored = await chrome.storage.local.get(['absUrl', 'metaUrl', 'metaKey', 'customDomain']);
+    const stored = await loadConfig(['absUrl', 'metaUrl', 'metaKey', 'customDomain']);
     return {absUrl: stored.absUrl, managerUrl: stored.metaUrl, managerKey: stored.metaKey,
             customDomain: stored.customDomain};
   }
@@ -171,7 +203,7 @@ function openOptionsPageOnce() {
       if (existing.managerUrl !== META_URL) changes.metaUrl = META_URL;
     }
     if (!existing.managerKey && typeof self.ASR_TOKEN === 'string' && self.ASR_TOKEN) changes.metaKey = self.ASR_TOKEN;
-    if (Object.keys(changes).length) await chrome.storage.local.set(changes);
+    if (Object.keys(changes).length) await saveConfig(changes);
     return {...existing, ...changes};
   }
 
@@ -264,7 +296,7 @@ function openOptionsPageOnce() {
   }
   async function readConfig() {
     // 存储键隔离：桥接块沿用 bridgeUrl/bridgeKey
-    const stored = await chrome.storage.local.get(['absUrl', 'bridgeUrl', 'bridgeKey', 'customDomain']);
+    const stored = await loadConfig(['absUrl', 'bridgeUrl', 'bridgeKey', 'customDomain']);
     return {absUrl: stored.absUrl, bridgeUrl: stored.bridgeUrl, bridgeKey: stored.bridgeKey,
             customDomain: stored.customDomain};
   }
@@ -290,7 +322,7 @@ function openOptionsPageOnce() {
     }
     const legacyKey = typeof BRIDGE_CONFIG !== 'undefined' ? BRIDGE_CONFIG.key : null;
     if (!existing.bridgeKey && legacyKey) changes.bridgeKey = legacyKey;
-    if (Object.keys(changes).length) await chrome.storage.local.set(changes);
+    if (Object.keys(changes).length) await saveConfig(changes);
     return {...existing, ...changes};
   }
 
@@ -493,5 +525,64 @@ function openOptionsPageOnce() {
         try { port.postMessage({type: 'error', message: error.message}); } catch (_) { /* already closed */ }
       });
     });
+  });
+})();
+
+/* ========== 4/4 经济学人音频（monkfishare.gitlab.io/econaudio） ==========
+   网页上的面板通过消息调用这里，由后台代发请求，避开跨域限制。 */
+(function () {
+  const FALLBACK_ECON_URL = (typeof ECON_URL !== 'undefined') ? ECON_URL : ABS_URL + '/__ext/econ';
+  const PANEL_HOST = 'https://monkfishare.gitlab.io';
+
+  async function readConfig() {
+    const stored = await loadConfig(['absUrl', 'econUrl', 'econKey', 'customDomain']);
+    return {absUrl: stored.absUrl, econUrl: stored.econUrl || FALLBACK_ECON_URL,
+            econKey: stored.econKey, customDomain: stored.customDomain};
+  }
+
+  async function initialize() {
+    const config = await readConfig();
+    const changes = {};
+    if (!config.customDomain && config.econUrl !== FALLBACK_ECON_URL) changes.econUrl = FALLBACK_ECON_URL;
+    if (Object.keys(changes).length) await saveConfig(changes);
+  }
+  chrome.runtime.onInstalled.addListener(() => { initialize().catch(() => {}); });
+  chrome.runtime.onStartup.addListener(() => { initialize().catch(() => {}); });
+
+  function fromPanel(sender) {
+    return typeof sender.url === 'string' && sender.url.startsWith(PANEL_HOST);
+  }
+
+  async function call(config, path, init) {
+    const headers = Object.assign({}, (init && init.headers) || {});
+    if (config.econKey) headers['X-Econ-Token'] = config.econKey;
+    const response = await fetch(config.econUrl.replace(/\/$/, '') + path, {
+      method: (init && init.method) || 'GET',
+      headers,
+      body: init && init.body,
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || data.message || ('接口错误 ' + response.status));
+    return data;
+  }
+
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    const action = message && message.action;
+    if (!['econStatus', 'econEditions', 'econSync', 'econJob'].includes(action)) return;
+    (async () => {
+      if (!fromPanel(sender)) throw new Error('只允许在 econaudio 页面调用');
+      const config = await readConfig();
+      if (action === 'econStatus') return call(config, '/api/health');
+      if (!config.econKey) throw new Error('请先在扩展设置里填写经济学人服务密钥');
+      if (action === 'econEditions') return call(config, '/api/editions?weeks=' + (message.weeks || 16));
+      if (action === 'econJob') return call(config, '/api/jobs/' + encodeURIComponent(message.job));
+      return call(config, '/api/sync', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({edition: message.edition, force: !!message.force}),
+      });
+    })().then(sendResponse).catch(error => sendResponse({error: error.message || '请求失败'}));
+    return true;
   });
 })();

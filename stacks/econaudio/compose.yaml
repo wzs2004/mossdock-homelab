@@ -1,0 +1,22 @@
+name: abs-econ
+services:
+  econaudio:
+    build: {context: ., dockerfile: Dockerfile}
+    image: local/econaudio:1
+    container_name: econaudio
+    ports: ["127.0.0.1:${ECON_PORT:-13387}:${ECON_PORT:-13387}"]
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      ECON_TOKEN: ${ECON_TOKEN:?set ECON_TOKEN in .env}
+      ECON_BOOKS: /audiobooks/The Economist - Weekly Editions
+      ECON_PORT: "${ECON_PORT:-13387}"
+      ABS_BASE_URL: http://audiobookshelf:80
+      ABS_API_TOKEN: ${ABS_API_TOKEN:-}
+    volumes:
+      - ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks:/audiobooks
+    networks: [abs]
+networks:
+  abs:
+    external: true
+    name: ${ABS_NETWORK:-mossdock-abs}
