@@ -2,6 +2,7 @@
 import hashlib
 import json
 import math
+import os
 import secrets
 import shutil
 import threading
@@ -270,6 +271,64 @@ def catalog(lite=False):
         row['tracks_done'] = sum(1 for t in tracks if t.get('status') == 'done')
         books.append(row)
     return {**{k: v for k, v in full.items() if k != 'books'}, 'books': books}
+
+
+BACKUP_TTL_DAYS = int(os.environ.get('BACKUP_TTL_DAYS', '30'))
+BACKUP_MAX_GB = float(os.environ.get('BACKUP_MAX_GB', '2'))
+
+
+def prune_data(ttl_days=None):
+    """清理占用空间且可再生的数据。
+
+    - book-srt-backups：发布字幕前的自动备份，只保留最近 N 天
+    - asr-*：转写临时分段目录，进程崩溃时会残留
+    - legacy-transcripts：整期字幕拆分的缓存，同样只留 N 天
+    """
+    days = ttl_days if ttl_days is not None else BACKUP_TTL_DAYS
+    cutoff = time.time() - days * 86400
+    removed = 0
+    folders = [m.DATA / 'book-srt-backups', m.DATA / 'legacy-transcripts']
+    for folder in folders:
+        if not folder.is_dir():
+            continue
+        for entry in folder.iterdir():
+            try:
+                if entry.is_file() and entry.stat().st_mtime < cutoff:
+                    entry.unlink()
+                    removed += 1
+                elif entry.is_dir() and entry.stat().st_mtime < cutoff:
+                    shutil.rmtree(entry, ignore_errors=True)
+                    removed += 1
+            except OSError:
+                continue
+    stale_cutoff = time.time() - 86400
+    for entry in m.DATA.glob('asr-*'):
+        try:
+            if entry.is_dir() and entry.stat().st_mtime < stale_cutoff:
+                shutil.rmtree(entry, ignore_errors=True)
+                removed += 1
+        except OSError:
+            continue
+    # 再按总容量兜底：超过上限就从最旧的开始删，防止连续大批转写把盘占满
+    folder = m.DATA / 'book-srt-backups'
+    if folder.is_dir():
+        files = sorted((f for f in folder.iterdir() if f.is_file()),
+                       key=lambda f: f.stat().st_mtime)
+        total = sum(f.stat().st_size for f in files)
+        limit = BACKUP_MAX_GB * 1024 ** 3
+        for entry in files:
+            if total <= limit:
+                break
+            total -= entry.stat().st_size
+            try:
+                entry.unlink()
+                removed += 1
+            except OSError:
+                pass
+
+    if removed:
+        print(f'[prune] 清理 {removed} 项过期数据（保留 {days} 天 / 上限 {BACKUP_MAX_GB} GB）', flush=True)
+    return removed
 
 
 def match_status(item_id):

@@ -15,6 +15,28 @@ docker compose -f stacks/transcription-manager/compose.yaml up -d --build
 
 底座已经存在时，只需第二条命令。
 
+## 数据放在哪（对机械盘很重要）
+
+运行时数据全部在 Docker 命名卷 `transcription-data`（内置 SSD）：
+
+| 内容 | 位置 |
+|---|---|
+| `tasks.sqlite3` 任务库（高频小写入） | `/data` 卷 |
+| `asr-*/segment.wav` 临时分段（每段 3.9 MB，用完即删） | `/data` 卷 |
+| `book-srt-backups/` 发布前备份 | `/data` 卷 |
+| `legacy-transcripts/` 整期字幕拆分缓存 | `/data` 卷 |
+| **最终发布的 `.srt`** | 音轨旁（机械盘，ABS/LR 要读） |
+| 媒体音频 | 机械盘（只读） |
+
+把 `/data` 放在机械盘时，转写期间实测写入 **1.8 GiB/h**；迁到 SSD 后降到
+**125 MiB/h**（约 15 倍），机械盘上只剩最终字幕这类少量顺序写。
+
+备份保留策略（`prune_data`，启动时和每 6 小时执行）：
+
+- `BACKUP_TTL_DAYS`（默认 30）：只保留最近 N 天的 SRT 备份与拆分缓存
+- `BACKUP_MAX_GB`（默认 2）：备份总量超过上限时从最旧的删起
+- 崩溃残留的 `asr-*` 临时目录超过 1 天自动清除
+
 ## Metal 加速（强烈建议开启）
 
 Docker 容器拿不到 Apple GPU，容器内的 whisper.cpp 只能跑 CPU。实测同一段

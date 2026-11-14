@@ -497,6 +497,12 @@ def render_srt(items):
 
 def publish(relative, source=None, replace=False):
     path = safe_audio(relative)
+    # 字幕刚写好/替换，让 book_tools 的目录缓存立刻反映出来
+    try:
+        import book_tools
+        book_tools.SUBTITLE_CACHE.pop(str(path), None)
+    except Exception:
+        pass
     existing = path.with_suffix(".srt")
     stale = stale_generated_subtitle(path)
     valid_existing = existing.is_file() and bool(cues(existing.read_text(encoding="utf-8-sig", errors="replace"), 0))
@@ -915,6 +921,27 @@ if __name__ == "__main__":
     LIBRARY_AUTOMATION = library_automation.STATE
     import media_sync
     threading.Thread(target=media_sync.run, daemon=True).start()
+
+    def warm_catalog():
+        # 启动时就预热书籍目录，避免第一次打开面板要等一分钟。
+        try:
+            import book_tools
+            book_tools.catalog()
+        except Exception:
+            pass
+
+    threading.Thread(target=warm_catalog, daemon=True).start()
+
+    def prune_loop():
+        import book_tools
+        while True:
+            try:
+                book_tools.prune_data()
+            except Exception:
+                pass
+            time.sleep(6 * 3600)
+
+    threading.Thread(target=prune_loop, daemon=True).start()
     # 元数据匹配与转写只在显式操作时触发。
     threading.Thread(target=automatic_worker, daemon=True).start()
     threading.Thread(target=worker, daemon=True).start()

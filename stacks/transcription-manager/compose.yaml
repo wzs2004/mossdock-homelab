@@ -27,6 +27,8 @@ services:
       AUTO_SCAN_SECONDS: ${AUTO_SCAN_SECONDS:-60}
       REGROUP_MAX_CHARS: ${REGROUP_MAX_CHARS:-220}
       REGROUP_MAX_SECONDS: ${REGROUP_MAX_SECONDS:-18}
+      BACKUP_TTL_DAYS: ${BACKUP_TTL_DAYS:-30}
+      BACKUP_MAX_GB: ${BACKUP_MAX_GB:-2}
     ports:
       # 只绑定回环，公网入口由 edge 的 /__ext/asr 反代提供
       - '127.0.0.1:${MANAGER_PORT:-13384}:13384'
@@ -34,9 +36,13 @@ services:
       - ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks:/audiobooks
       - ${ABS_DATA:-/Volumes/NAS/Apps/Audiobookshelf}/audiobooks115:/audiobooks115
       - ${MODEL_DIR:-/Volumes/NAS/Apps/whisper-models}:/models:ro
-      - ${MANAGER_DATA:-/Volumes/NAS/Apps/Audiobookshelf/transcription-manager}:/data
-      - ${MANAGER_DATA:-/Volumes/NAS/Apps/Audiobookshelf/transcription-manager}/data/transcripts:/transcripts:ro
+      # 运行时数据（任务库、临时 WAV 分段、SRT 备份）放在命名卷（内置 SSD）。
+      # 机械盘只保留媒体本身和最终发布的 .srt，避免转写时持续写机械盘。
+      - transcription-data:/data
     networks: [abs]
+volumes:
+  transcription-data:
+    name: transcription-data
 networks:
   abs:
     external: true
