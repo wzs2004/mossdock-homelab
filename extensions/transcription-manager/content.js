@@ -164,6 +164,7 @@
     try {
       const data = await api('books');
       books = data.books || [];
+      if (!books.length) notice.textContent = data.model_error || '';
       render();
     } catch (error) {
       main.replaceChildren(el('div', `读取失败：${error.message}`, 'error'));
@@ -174,7 +175,9 @@
 
   toggle.onclick = async () => {
     panel.hidden = !panel.hidden;
-    if (!panel.hidden) await load();
+    if (panel.hidden) return;
+    if (!books.length) main.replaceChildren(el('div', '正在读取书籍列表…', 'meta'));
+    await load();
   };
   closeButton.onclick = () => { panel.hidden = true; };
   refreshButton.onclick = () => load();
