@@ -13,6 +13,13 @@ import transcription_manager as m
 
 LOCK = threading.RLock()
 CACHE = (0, [])
+# 字幕存在性缓存：每条音轨都要在机械盘上 stat 三个候选路径，
+# 全库 5000+ 条音轨会把 catalog 拖到一分钟。TTL 取得短，新字幕最迟 20 秒可见。
+SUBTITLE_CACHE = {}
+SUBTITLE_TTL = 600
+CATALOG_CACHE = (0, None)
+CATALOG_TTL = 20          # 新鲜期；过期后后台刷新，仍然立刻返回旧数据
+CATALOG_REFRESHING = None
 JOBS = {}
 MATCH_SEARCHES = {}
 PROVIDERS = {
@@ -177,7 +184,18 @@ def update_manuscripts():
             m.AUTO_STATE['error'] = str(exc)
 
 
-def catalog():
+def subtitle_exists(path):
+    key = str(path)
+    now = time.monotonic()
+    hit = SUBTITLE_CACHE.get(key)
+    if hit and now - hit[0] < SUBTITLE_TTL:
+        return hit[1]
+    value = bool(m.subtitle(path))
+    SUBTITLE_CACHE[key] = (now, value)
+    return value
+
+
+def _build_catalog():
     tasks = {t['path']: t for t in m.rows('SELECT * FROM tasks')}
     output = []
     forced={r['path'] for r in m.rows('SELECT path FROM quality_requests')}
@@ -192,7 +210,7 @@ def catalog():
         states = []
         for path in paths:
             key = relative(path); task = tasks.get(key, {})
-            exists = bool(m.subtitle(path)); state = task.get('status', 'missing')
+            exists = subtitle_exists(path); state = task.get('status', 'missing')
             if state != 'running' and exists and not (key in forced and state in {'queued','failed'}): state = 'done'
             if state == 'done' and not exists: state = 'missing'
             states.append(dict(path=key, status=state, progress=100 if state=='done' else task.get('progress', 0), error=task.get('error',''), started=task.get('started',0), stage=task.get('stage','')))
@@ -205,6 +223,53 @@ def catalog():
         status = next((s for s in ('running','queued','failed','missing','cancelled') if any(t['status']==s for t in states)), 'done')
         output.append(dict(id=item['id'], name=(item.get('media') or {}).get('metadata',{}).get('title',item['id']), library=item.get('library_name',''), status=status, progress=round(progress,1), eta_seconds=eta, errors=[t['error'] for t in states if t['error'] and t['status']=='failed'], stage=active[0]['stage'] if active else '', tracks=states, has_transcript=any(t['status']=='done' for t in states), complete=all(t['status']=='done' for t in states)))
     return {'books':output, 'model_error':m.model_error(), 'auto_transcribe':False,'quality_profile':__import__('asr_quality').PROFILE,'model':m.MODEL.name}
+
+
+def _refresh_catalog_async():
+    """后台重建目录；同一时刻只允许一个重建线程。"""
+    global CATALOG_REFRESHING
+    if CATALOG_REFRESHING is not None and CATALOG_REFRESHING.is_alive():
+        return
+    def run():
+        try:
+            _store_catalog(_build_catalog())
+        except Exception:
+            pass
+    CATALOG_REFRESHING = threading.Thread(target=run, daemon=True)
+    CATALOG_REFRESHING.start()
+
+
+def _store_catalog(result):
+    global CATALOG_CACHE
+    CATALOG_CACHE = (time.monotonic(), result)
+    return result
+
+
+def catalog(lite=False):
+    """目录接口。
+
+    过期不阻塞：有旧数据就立刻返回并在后台刷新，避免转写占满磁盘时
+    一次重建要几十秒、把面板卡住。
+    lite=True 去掉每本书的音轨明细（响应体从 ~1 MB 降到几十 KB），
+    面板列表只需要总数/完成数。
+    """
+    cached_at, cached = CATALOG_CACHE
+    if cached is None:
+        full = _store_catalog(_build_catalog())      # 首次（启动预热通常已填好）
+    else:
+        full = cached
+        if time.monotonic() - cached_at >= CATALOG_TTL:
+            _refresh_catalog_async()
+    if not lite:
+        return full
+    books = []
+    for item in full['books']:
+        row = {k: v for k, v in item.items() if k != 'tracks'}
+        tracks = item.get('tracks') or []
+        row['tracks_total'] = len(tracks)
+        row['tracks_done'] = sum(1 for t in tracks if t.get('status') == 'done')
+        books.append(row)
+    return {**{k: v for k, v in full.items() if k != 'books'}, 'books': books}
 
 
 def match_status(item_id):
@@ -372,7 +437,7 @@ def clear_and_retranscribe(item_id):
 def get(url):
     params=urllib.parse.parse_qs(url.query)
     item_id=params.get('path',[''])[0]
-    if url.path=='/api/books/catalog': return catalog()
+    if url.path=='/api/books/catalog': return catalog(lite=params.get('lite',['0'])[0]=='1')
     if url.path=='/api/books/match-status': return match_status(item_id)
     if url.path=='/api/books/match-providers': return match_providers()
     if url.path=='/api/books/match-candidates':

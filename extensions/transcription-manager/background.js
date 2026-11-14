@@ -4,7 +4,7 @@ importScripts('config.js');
 
 const SCRIPT_ID = 'abs-transcription-panel';
 const API = {
-  books: ['GET', '/api/books/catalog'],
+  books: ['GET', '/api/books/catalog?lite=1'],
   queueCurrentBook: ['POST', '/api/books/queue']
 };
 
