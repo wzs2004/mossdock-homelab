@@ -73,6 +73,8 @@ class Track:
     path: Path
     duration: float
     offset: float
+    start: float = 0.0      # 章节在源文件里的起点（非章节轨为 0）
+    chapter: bool = False   # True = 单文件按章节切出来的片段
 
 
 @dataclass(frozen=True)
@@ -92,79 +94,195 @@ class LibraryIndex:
         self.root = root.resolve()
         self.roots = roots or {"audiobooks": self.root}
         self.durations = {}
+        self._chapters_cache: dict[tuple, list] = {}
         self._issues: dict[str, Issue] = {}
         self._updated = float("-inf")
         self._lock = threading.RLock()
+        self._building = False
+        self._cache_file = Path(tempfile.gettempdir()) / 'lr-bridge-index.pkl'
+        # 重启后先用上次的索引顶上（否则要重扫整个 NAS，几十秒到几分钟）
+        try:
+            import pickle
+            if self._cache_file.is_file():
+                with self._cache_file.open('rb') as handle:
+                    cached = pickle.load(handle)
+                if isinstance(cached, dict):
+                    self._issues = cached.get('issues') or {}
+                    self.durations = cached.get('durations') or {}
+                    self._chapters_cache = cached.get('chapters') or {}
+                    if self._issues:
+                        self._updated = time.monotonic() - 3600  # 标记过期，后台重扫
+        except Exception as exc:
+            print(f"Index cache unreadable: {exc}", file=sys.stderr)
 
     def issues(self) -> dict[str, Issue]:
+        """永远不阻塞请求：缓存新鲜就直接返回，否则后台重扫、先给上一次的结果。"""
         with self._lock:
-            if time.monotonic() - self._updated < 60:
+            if time.monotonic() - self._updated < 600:
                 return self._issues
-            result = {}
-            item_paths = {}
-            api_url = os.environ.get("ABS_BASE_URL", "")
-            token = os.environ.get("ABS_API_TOKEN", "")
-            if api_url and token:
-                def api(path):
-                    request = urllib.request.Request(api_url+path, headers={"Authorization":"Bearer "+token})
-                    with urllib.request.urlopen(request,timeout=20) as response: return json.load(response)
-                try:
-                    for library in api("/api/libraries").get("libraries",[]):
-                        for item in api("/api/libraries/"+library['id']+"/items?limit=0&minified=0").get("results",[]):
-                            item_paths.setdefault(item.get("path", ""), []).append(item["id"])
-                except Exception as exc:
-                    print(f"ABS item mapping unavailable: {exc}", file=sys.stderr)
-            for library_id, root in self.roots.items():
-                root = root.resolve()
-                folders = set()
-                for file in root.rglob("*"):
-                    if file.is_file() and file.suffix.lower() in SUPPORTED and not file.is_symlink():
-                        if file.resolve().is_relative_to(root): folders.add(file.parent)
-                for folder in sorted(folders):
-                    offset, tracks = 0.0, []
-                    for file in sorted(folder.iterdir()):
-                        if not file.is_file() or file.suffix.lower() not in SUPPORTED or file.is_symlink(): continue
-                        try:
-                            stat = file.stat()
-                            signature = (str(file),stat.st_size,stat.st_mtime_ns)
-                            duration = self.durations.get(signature)
-                            if duration is None:
-                                audio = AudioFile(file)
-                                if audio is not None: duration = float(audio.info.length)
-                                else:
-                                    duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(file)],text=True,timeout=20))
-                                self.durations[signature] = duration
-                            if duration <= 0: continue
-                        except Exception as exc:
-                            print(f"Skipping unreadable audio {file}: {exc}",file=sys.stderr)
-                            continue
-                        tracks.append(Track(file.stem,file,duration,offset));offset+=duration
-                    if not tracks: continue
-                    rel = str(folder.relative_to(root))
-                    # Retain original Economist IDs used by existing LR jobs.
-                    identity = rel if library_id == 'audiobooks' else library_id+'/'+rel
-                    issue_id = hashlib.sha256(identity.encode()).hexdigest()[:20]
-                    subs=folder/'transcript.srt'
-                    subtitle_status = 'legacy'
-                    if subs.is_file():
-                        try:
-                            from srt_order import read_order
-                            ordered, subtitle_status = read_order(subs, [t.path for t in tracks])
-                            by_path = {t.path.resolve(): t for t in tracks}
-                            offset = 0.0; reordered = []
-                            for path in ordered:
-                                t = by_path[path]
-                                reordered.append(Track(t.name, t.path, t.duration, offset)); offset += t.duration
-                            tracks = reordered
-                        except (OSError, ValueError, KeyError, TypeError) as exc:
-                            print(f'Combined SRT unavailable for {folder}: {exc}', file=sys.stderr)
-                            subs = None
-                    ids=set(item_paths.get(str(folder),[]))
-                    for track in tracks: ids.update(item_paths.get(str(track.path),[]))
-                    result[issue_id] = Issue(issue_id,rel,folder,tuple(tracks),subs if subs and subs.is_file() else None,library_id,tuple(sorted(ids)),subtitle_status)
-            self._issues = result
-            self._updated = time.monotonic()
-            return result
+            if self._building:
+                return self._issues
+            self._building = True
+        threading.Thread(target=self._rebuild, daemon=True).start()
+        return self._issues
+
+    def _rebuild(self) -> None:
+        try:
+            result = self._scan()
+            with self._lock:
+                self._issues = result
+                self._updated = time.monotonic()
+            try:
+                import pickle
+                with self._cache_file.open('wb') as handle:
+                    pickle.dump({'issues': result, 'durations': dict(self.durations),
+                                 'chapters': dict(self._chapters_cache)}, handle)
+            except Exception as exc:
+                print(f"Index cache write failed: {exc}", file=sys.stderr)
+        except Exception as exc:
+            print(f"Index rebuild failed: {exc}", file=sys.stderr)
+        finally:
+            self._building = False
+
+    def _scan(self) -> dict[str, Issue]:
+        result = {}
+        item_paths = {}
+        api_url = os.environ.get("ABS_BASE_URL", "")
+        token = os.environ.get("ABS_API_TOKEN", "")
+        api = None
+        if api_url and token:
+            def api(path):
+                request = urllib.request.Request(api_url+path, headers={"Authorization":"Bearer "+token})
+                with urllib.request.urlopen(request,timeout=20) as response: return json.load(response)
+            try:
+                for library in api("/api/libraries").get("libraries",[]):
+                    for item in api("/api/libraries/"+library['id']+"/items?limit=0&minified=0").get("results",[]):
+                        item_paths.setdefault(item.get("path", ""), []).append(item["id"])
+            except Exception as exc:
+                print(f"ABS item mapping unavailable: {exc}", file=sys.stderr)
+        for library_id, root in self.roots.items():
+            root = root.resolve()
+            media = [f for f in root.rglob("*")
+                     if f.is_file() and f.suffix.lower() in SUPPORTED and not f.is_symlink()
+                     and f.resolve().is_relative_to(root)]
+            self._prefetch_durations(media)
+            folders = {f.parent for f in media}
+            for folder in sorted(folders):
+                offset, tracks = 0.0, []
+                for file in sorted(folder.iterdir()):
+                    if not file.is_file() or file.suffix.lower() not in SUPPORTED or file.is_symlink(): continue
+                    try:
+                        stat = file.stat()
+                        signature = (str(file),stat.st_size,stat.st_mtime_ns)
+                        duration = self.durations.get(signature)
+                        if duration is None:
+                            audio = AudioFile(file)
+                            if audio is not None: duration = float(audio.info.length)
+                            else:
+                                duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(file)],text=True,timeout=20))
+                            self.durations[signature] = duration
+                        if duration <= 0: continue
+                    except Exception as exc:
+                        print(f"Skipping unreadable audio {file}: {exc}",file=sys.stderr)
+                        continue
+                    tracks.append(Track(file.stem,file,duration,offset));offset+=duration
+                if not tracks: continue
+                rel = str(folder.relative_to(root))
+                # Retain original Economist IDs used by existing LR jobs.
+                identity = rel if library_id == 'audiobooks' else library_id+'/'+rel
+                issue_id = hashlib.sha256(identity.encode()).hexdigest()[:20]
+                subs=folder/'transcript.srt'
+                subtitle_status = 'legacy'
+                if subs.is_file():
+                    try:
+                        from srt_order import read_order
+                        ordered, subtitle_status = read_order(subs, [t.path for t in tracks])
+                        by_path = {t.path.resolve(): t for t in tracks}
+                        offset = 0.0; reordered = []
+                        for path in ordered:
+                            t = by_path[path]
+                            reordered.append(Track(t.name, t.path, t.duration, offset)); offset += t.duration
+                        tracks = reordered
+                    except (OSError, ValueError, KeyError, TypeError) as exc:
+                        print(f'Combined SRT unavailable for {folder}: {exc}', file=sys.stderr)
+                        subs = None
+                # 单文件（.m4b/.mp3）且 ABS 里有章节时，按章节切开，
+                # 这样 Language Reactor 每次只拉一章，而不是一个几百 MB 的整书。
+                if len(tracks) == 1:
+                    chapters = self.chapter_split(tracks[0])
+                    if chapters:
+                            tracks = [Track(name=title, path=tracks[0].path, duration=end - begin,
+                                            offset=begin, start=begin, chapter=True)
+                                      for begin, end, title in chapters]
+                ids=set(item_paths.get(str(folder),[]))
+                for track in tracks: ids.update(item_paths.get(str(track.path),[]))
+                result[issue_id] = Issue(issue_id,rel,folder,tuple(tracks),subs if subs and subs.is_file() else None,library_id,tuple(sorted(ids)),subtitle_status)
+        return result
+
+    def _duration_of(self, file: Path) -> float:
+        stat = file.stat()
+        signature = (str(file), stat.st_size, stat.st_mtime_ns)
+        duration = self.durations.get(signature)
+        if duration is None:
+            audio = AudioFile(file)
+            if audio is not None:
+                duration = float(audio.info.length)
+            else:
+                duration = float(subprocess.check_output(
+                    ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
+                     '-of', 'default=nw=1:nk=1', str(file)], text=True, timeout=20))
+            self.durations[signature] = duration
+        return duration
+
+    def _prefetch_durations(self, files) -> None:
+        todo = []
+        for file in files:
+            try:
+                stat = file.stat()
+            except OSError:
+                continue
+            if (str(file), stat.st_size, stat.st_mtime_ns) not in self.durations:
+                todo.append(file)
+        if not todo:
+            return
+        from concurrent.futures import ThreadPoolExecutor
+        def work(file):
+            try:
+                self._duration_of(file)
+            except Exception:
+                pass
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(work, todo))
+
+    def chapter_split(self, track: Track) -> list:
+        """单文件的章节：直接问文件本身（ffprobe），走缓存；<2 章就保持整文件。"""
+        try:
+            stat = track.path.stat()
+        except OSError:
+            return []
+        key = (str(track.path), stat.st_size, stat.st_mtime_ns)
+        cached = self._chapters_cache.get(key)
+        if cached is not None:
+            return cached
+        result = []
+        try:
+            raw = subprocess.check_output(
+                ['ffprobe', '-v', 'error', '-show_chapters', '-of', 'json', str(track.path)],
+                text=True, timeout=30)
+            for chapter in (json.loads(raw or '{}').get('chapters') or []):
+                begin = float(chapter.get('start_time') or 0)
+                end = float(chapter.get('end_time') or 0)
+                if end - begin < 5:
+                    continue
+                title = str((chapter.get('tags') or {}).get('title') or '').strip()
+                result.append((begin, end, f"{len(result) + 1:03d} {title}".strip()))
+        except Exception as exc:
+            print(f"Chapters unavailable for {track.path.name}: {exc}", file=sys.stderr)
+            result = []
+        if len(result) < 2:
+            result = []
+        self._chapters_cache[key] = result
+        return result
 
     def track(self, issue_id: str, index: int) -> tuple[Issue, Track]:
         issue = self.issues().get(issue_id)
@@ -174,7 +292,7 @@ class LibraryIndex:
 
     def subtitle(self, issue: Issue, track: Track) -> str:
         individual = track.path.with_suffix(".srt")
-        if individual.is_file():
+        if not track.chapter and individual.is_file():
             text = individual.read_text(encoding="utf-8-sig")
             if parse_srt(text): return text
         if issue.subtitle_status == 'partial':
@@ -199,13 +317,62 @@ class LibraryIndex:
             {"id": issue.id, "name": issue.name, "library": issue.library, "itemIds": list(issue.item_ids),
              "hasSubtitles": bool(issue.subtitles or any(t.path.with_suffix('.srt').is_file() for t in issue.tracks)),
              "tracks": [{"index": i, "name": track.name, "duration": round(track.duration, 2),
+                         "chapter": track.chapter,
                          "hasSubtitles": bool(issue.subtitles or track.path.with_suffix('.srt').is_file())}
                         for i, track in enumerate(issue.tracks)]}
             for issue in issues
         ]}
 
 
+def safe_filename(value: str) -> str:
+    value = re.sub(r'[<>:"/\\|?*\x00-\x1f]', ' ', str(value or ''))
+    return re.sub(r'\s+', ' ', value).strip(' .')[:90] or 'chapter'
+
+
+def chapter_audio(track):
+    """整书单文件里的某一章：用 ffmpeg 切出来，缓存复用。
+    能直通复制就直通（瞬间完成），不行才转码。"""
+    stat = track.path.stat()
+    key = hashlib.sha256(json.dumps([
+        str(track.path), stat.st_size, stat.st_mtime_ns,
+        round(track.start, 3), round(track.duration, 3)]).encode()).hexdigest()
+    folder = Path(tempfile.gettempdir()) / 'lr-chapter-cache'
+    folder.mkdir(exist_ok=True)
+    direct = track.path.suffix.lower() in {'.m4b', '.m4a', '.mp4', '.aac', '.mp3'}
+    base = ['ffmpeg', '-nostdin', '-v', 'error', '-y',
+            '-ss', f'{track.start:.3f}', '-t', f'{track.duration:.3f}',
+            '-i', str(track.path), '-vn']
+    plans = []
+    if direct:
+        plans.append((folder / (key + ('.m4a' if track.path.suffix.lower() != '.mp3' else '.mp3')),
+                      base + ['-c:a', 'copy']))
+    plans.append((folder / (key + '.mp3'), base + ['-c:a', 'libmp3lame', '-q:a', '4']))
+    for target, command in plans:
+        if target.is_file() and target.stat().st_size > 1024:
+            mime = 'audio/mp4' if target.suffix == '.m4a' else 'audio/mpeg'
+            return target, safe_filename(track.name) + target.suffix, mime
+    with CONVERSION_LOCK:
+        for target, command in plans:
+            if target.is_file() and target.stat().st_size > 1024:
+                mime = 'audio/mp4' if target.suffix == '.m4a' else 'audio/mpeg'
+                return target, safe_filename(track.name) + target.suffix, mime
+            temp = target.with_name(target.stem + '.tmp' + target.suffix)
+            try:
+                subprocess.run(command + [str(temp)], capture_output=True, check=True, timeout=900)
+                if temp.is_file() and temp.stat().st_size > 1024:
+                    temp.replace(target)
+                    mime = 'audio/mp4' if target.suffix == '.m4a' else 'audio/mpeg'
+                    return target, safe_filename(track.name) + target.suffix, mime
+            except subprocess.SubprocessError:
+                pass
+            finally:
+                temp.unlink(missing_ok=True)
+    raise OSError('章节音频切分失败：' + track.name)
+
+
 def playable_audio(track):
+    if track.chapter:
+        return chapter_audio(track)
     # Chrome cannot decode WMA. Cache a local conversion, preserving source media.
     if track.path.suffix.lower() not in {'.wma', '.aac'}:
         return track.path, track.path.name, mimetypes.guess_type(track.path.name)[0] or 'audio/mpeg'

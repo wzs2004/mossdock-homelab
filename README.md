@@ -68,3 +68,7 @@ docs/                     GitHub Pages 安装页 + 运维文档
 - [密钥清单](docs/SECRETS.md)
 - [备份与恢复](docs/BACKUP.md)
 - [排障](docs/TROUBLESHOOTING.md)
+
+> Language Reactor 桥接现在会**按章节切分整书单文件**（.m4b/.mp3）：ABS 里一本书有 47 章，
+> 面板里就是 47 条，每次只把这一章的音频和对应字幕送进 LR，而不是几百 MB 的整书。
+> 桥接索引改成后台重建 + 磁盘缓存（首次扫描较慢，之后秒开）。
